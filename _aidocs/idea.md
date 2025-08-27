@@ -6,7 +6,7 @@ An AI-powered creative workspace that transforms raw ideas into polished social 
 ## Key Terms & Structure
 - **Spark**: User captures their initial idea 
 - **Story**: User elaborates with personal backstory, motivation, and context
-- **Artifact**: The result created from story for a particular medium and format
+- **Artifact**: The result created from story for a particular medium and format (stored as markdown)
 
 ### Content Hierarchy
 ```
@@ -26,9 +26,10 @@ Spark (1)
 
 ### 2. Multi-Artifact Development
 - **Artifact Types**: From one Story, create multiple artifacts (social posts, blog articles, images, videos, etc.)
-- **Draft Creation**: AI generates initial draft for each artifact type based on Story
+- **Draft Creation**: AI generates initial draft for each artifact type based on Story (in markdown format)
 - **Iterative Refinement**: User provides feedback, AI refines until Draft becomes Final
 - **Parallel Development**: Multiple artifacts can be developed simultaneously from the same Story
+- **Markdown Storage**: All text content stored and managed as markdown
 
 ### 3. Version Management & Snapshots
 - **Draft-Final States**: Each artifact maintains clear Draft → Final progression

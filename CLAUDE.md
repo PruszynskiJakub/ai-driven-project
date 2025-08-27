@@ -49,3 +49,16 @@ The project uses strict TypeScript settings with:
 ## Development Notes
 
 Since this is a fresh Bun project with minimal setup, most development patterns will need to be established as the codebase grows. The current structure supports modern TypeScript/ESNext development with Bun's built-in capabilities for running, testing, and bundling.
+
+## Domain Glossary
+
+Core content model follows this hierarchy:
+- **Spark**: User's initial idea capture
+- **Story**: Elaborated backstory, motivation, and context from the Spark
+- **Artifact**: Content result created from Story for specific medium/format
+
+**Content Structure:**
+```
+Spark (1) → Story (1) → Artifacts (many: posts, images, etc.)
+                        └── Each has Draft → Final states
+```
