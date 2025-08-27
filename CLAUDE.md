@@ -31,11 +31,22 @@ bun run tsc --noEmit
 ## Project Architecture
 
 - **Runtime**: Bun v1.1.34+ (JavaScript runtime, package manager, bundler, test runner)
+- **Backend**: Hono web framework with TypeScript
+- **Database**: SQLite using Bun's native `bun:sqlite` integration
+- **ORM**: Drizzle ORM for type-safe queries and migrations
+- **Validation**: Zod for runtime schema validation and type inference
 - **Language**: TypeScript with ESNext target
-- **Entry point**: `index.ts` - currently a minimal starter file
+- **Entry point**: `index.ts` - Hono server with API routes
 - **Configuration**: 
   - `tsconfig.json` - TypeScript configuration with strict mode enabled
-  - `package.json` - minimal configuration with @types/bun dev dependency
+  - `drizzle.config.ts` - Database migration configuration
+  - `package.json` - Dependencies for Hono, Drizzle, Zod
+
+**Database Commands:**
+```bash
+bunx drizzle-kit generate  # Generate migrations from schema changes
+bunx drizzle-kit migrate   # Apply pending migrations
+```
 
 ## TypeScript Configuration
 
@@ -46,9 +57,42 @@ The project uses strict TypeScript settings with:
 - Strict type checking enabled
 - Import extensions allowed for bundler mode
 
-## Development Notes
+## Project Structure
 
-Since this is a fresh Bun project with minimal setup, most development patterns will need to be established as the codebase grows. The current structure supports modern TypeScript/ESNext development with Bun's built-in capabilities for running, testing, and bundling.
+```
+/
+├── index.ts                    # Hono server entry point
+├── drizzle.config.ts          # Database migration configuration
+├── data/                      # SQLite database files
+│   └── content-platform.db    # Main database
+├── src/
+│   ├── models/
+│   │   └── schemas.ts         # Zod schemas and TypeScript types
+│   ├── database/
+│   │   ├── schema.ts          # Drizzle database schema
+│   │   ├── connection.ts      # Database connection setup
+│   │   └── migrations/        # Generated migration files
+│   ├── routes/
+│   │   ├── index.ts           # Main API router
+│   │   └── sparks.ts          # Sparks CRUD endpoints
+│   └── services/              # Business logic (future)
+└── _aidocs/                   # Project documentation
+    ├── idea.md                # Platform concept & vision
+    └── journey.md             # User workflow examples
+```
+
+**API Structure:**
+- `GET /health` - Health check endpoint
+- `GET /api` - API overview and available endpoints
+- `POST /api/sparks` - Create new spark
+- `GET /api/sparks` - List all sparks
+- `GET /api/sparks/:id` - Get specific spark
+- Additional routes for stories, artifacts, publications (to be implemented)
+
+## Pitfalls & Gotchas
+
+- Use `bun:sqlite` instead of `better-sqlite3` to avoid ABI version conflicts with Bun
+- Drizzle config requires `dialect: 'sqlite'` not `driver: 'better-sqlite'`
 
 ## Domain Glossary
 
