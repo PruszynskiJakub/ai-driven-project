@@ -63,11 +63,17 @@ Core content model follows this hierarchy:
 Spark (1)
 ├── Story (1)
 ├── Artifacts (many)
-│   ├── Draft
-│   └── Final (user-declared readiness)
+│   ├── Draft (mutable)
+│   └── Final (immutable when marked final)
 └── Publications (many)
     └── Composed of multiple Final artifacts
 ```
+
+**Artifact State Rules:**
+- Draft: Freely modifiable until user marks as Final
+- Final: Immutable once marked (requires non-empty Final + user confirmation)
+- Final artifacts can only be duplicated to create new Drafts for modification
+- Only Final artifacts can be used in Publications or as sources for new artifacts
 
 **Versioning Rules:**
 - Linear progression only (no branching)
