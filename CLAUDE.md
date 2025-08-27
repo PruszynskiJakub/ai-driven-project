@@ -56,9 +56,21 @@ Core content model follows this hierarchy:
 - **Spark**: User's initial idea capture
 - **Story**: Elaborated backstory, motivation, and context from the Spark
 - **Artifact**: Content result created from Story for specific medium/format
+- **Publication**: Composition of multiple artifacts for platform-ready content
 
 **Content Structure:**
 ```
-Spark (1) → Story (1) → Artifacts (many: posts, images, etc.)
-                        └── Each has Draft → Final states
+Spark (1)
+├── Story (1)
+├── Artifacts (many)
+│   ├── Draft
+│   └── Final (user-declared readiness)
+└── Publications (many)
+    └── Composed of multiple Final artifacts
 ```
+
+**Versioning Rules:**
+- Linear progression only (no branching)
+- Manual snapshots capture complete Draft/Final states
+- Failed drafts disappear (no clutter preservation)
+- Artifacts can be reused as source material for new artifacts

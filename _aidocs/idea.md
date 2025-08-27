@@ -7,14 +7,17 @@ An AI-powered creative workspace that transforms raw ideas into polished social 
 - **Spark**: User captures their initial idea 
 - **Story**: User elaborates with personal backstory, motivation, and context
 - **Artifact**: The result created from story for a particular medium and format (stored as markdown)
+- **Publication**: Composed of multiple artifacts for a specific platform/format
 
 ### Content Hierarchy
 ```
 Spark (1)
-└── Story (1)
-    └── Artifacts (many)
-        ├── Draft
-        └── Final
+├── Story (1)
+├── Artifacts (many)
+│   ├── Draft
+│   └── Final
+└── Publications (many)
+    └── Composed of multiple Artifacts
 ```
 
 ## The Creative Journey
@@ -30,12 +33,17 @@ Spark (1)
 - **Iterative Refinement**: User provides feedback, AI refines until Draft becomes Final
 - **Parallel Development**: Multiple artifacts can be developed simultaneously from the same Story
 - **Markdown Storage**: All text content stored and managed as markdown
+- **Artifact Reuse**: Final artifacts can be source material for new artifacts
 
-### 3. Version Management & Snapshots
-- **Draft-Final States**: Each artifact maintains clear Draft → Final progression
-- **Snapshot System**: Save creative moments at any stage (Draft versions, Final versions)
-- **Branch Navigation**: Return to previous versions and create alternative paths
-- **Creative History**: Full timeline showing how each artifact evolved from the Story
+### 3. Publication Assembly  
+- **Composition**: Combine multiple Final artifacts into platform-ready publications
+- **Examples**: LinkedIn Post + Image = "LinkedIn Post with Image" publication
+- **Flexible Reuse**: Same artifacts can be used in different publication combinations
+
+### 4. Version Management & Snapshots
+- **Linear Versioning**: Simple progression without branching complexity
+- **Manual Snapshots**: User-triggered saves of complete Draft or Final states
+- **Snapshot Navigation**: Return to previous saved states when needed
 
 ## Value Proposition
 Bridges the gap between having great ideas and creating compelling social content by:
