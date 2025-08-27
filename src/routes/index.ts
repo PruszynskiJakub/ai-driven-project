@@ -1,11 +1,35 @@
-import { Hono } from 'hono'
+import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { sparksRouter } from './sparks'
 
-export const apiRouter = new Hono()
+export const apiRouter = new OpenAPIHono()
 
 apiRouter.route('/sparks', sparksRouter)
 
-apiRouter.get('/', (c) => {
+const apiOverviewRoute = createRoute({
+  method: 'get',
+  path: '/',
+  tags: ['General'],
+  responses: {
+    200: {
+      content: {
+        'application/json': {
+          schema: z.object({
+            message: z.string(),
+            endpoints: z.object({
+              sparks: z.string(),
+              stories: z.string(),
+              artifacts: z.string(),
+              publications: z.string(),
+            }),
+          }),
+        },
+      },
+      description: 'API overview',
+    },
+  },
+})
+
+apiRouter.openapi(apiOverviewRoute, (c) => {
   return c.json({ 
     message: 'Content Creation Platform API',
     endpoints: {

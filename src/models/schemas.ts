@@ -1,11 +1,11 @@
-import { z } from 'zod'
+import { z } from '@hono/zod-openapi'
 
 export const SparkSchema = z.object({
-  id: z.string().uuid(),
-  content: z.string().min(1),
-  createdAt: z.date(),
-  updatedAt: z.date(),
-})
+  id: z.string().uuid().openapi({ example: '550e8400-e29b-41d4-a716-446655440000' }),
+  content: z.string().min(1).openapi({ example: 'My breakthrough moment with imposter syndrome' }),
+  createdAt: z.date().openapi({ example: '2024-08-27T19:17:20.000Z' }),
+  updatedAt: z.date().openapi({ example: '2024-08-27T19:17:20.000Z' }),
+}).openapi('Spark')
 
 export const StorySchema = z.object({
   id: z.string().uuid(),
@@ -60,7 +60,7 @@ export const CreateSparkSchema = SparkSchema.omit({
   id: true, 
   createdAt: true, 
   updatedAt: true 
-})
+}).openapi('CreateSpark')
 
 export const CreateStorySchema = StorySchema.omit({ 
   id: true, 
