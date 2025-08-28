@@ -9,5 +9,5 @@
 - Generate LinkedIn post draft from Story
 - Iterate and refine draft content
 - Mark draft as Final (immutable)
-- Generate image content draft from Story
-- Create artifact using another Final artifact as source
+- Generate image content draft from LinkedIn post Final artifact
+- Create Publication combining LinkedIn post + image
