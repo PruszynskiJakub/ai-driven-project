@@ -5,7 +5,7 @@ An AI-powered creative workspace that transforms raw ideas into polished social 
 
 ## Key Terms & Structure
 - **Spark**: User captures their initial idea 
-- **Story**: User elaborates with personal backstory, motivation, and context
+- **Story**: User elaborates with personal backstory
 - **Artifact**: The result created from story for a particular medium and format (stored as markdown)
 - **Publication**: Composed of multiple Final artifacts for a specific platform/format
 
