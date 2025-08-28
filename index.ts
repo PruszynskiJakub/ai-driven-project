@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import sparks from './src/routes/sparks'
 
 const app = new Hono()
 
@@ -10,7 +11,9 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
+app.route('/api/sparks', sparks)
+
 export default {
-  port: 3000,
+  port: 3001,
   fetch: app.fetch,
 }
