@@ -6,9 +6,12 @@ As a user I want to schedule a publication.
 As a user I want to publish my publication on social media.
 As a user I want to generate sparks from story.
 As a user I want to generate sparks from articles, videos etc.
+As a user I want to see similar sparks during after creation.
+As a user I want my spark to be intelligently refined with AI so the title and initial thoughts have more sense. Yet we keep original intact as a reference.
 
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
+
 
 What are the reasons behind story modification
 
