@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { getSparkById, listSparks, createSpark } from '../services/sparkService';
 import { CreateSparkSchema } from '../models/spark';
+import { getStoryBySparkId } from '../services/storyService';
 
 const sparks = new Hono();
 
@@ -72,6 +73,32 @@ sparks.get('/:id', async (c) => {
     console.error('Error getting spark:', error);
     return c.json({ 
       error: 'Failed to get spark',
+      message: 'An unexpected error occurred. Please try again.'
+    }, 500);
+  }
+});
+
+sparks.get('/:sparkId/story', async (c) => {
+  try {
+    const sparkId = c.req.param('sparkId');
+    const story = await getStoryBySparkId(sparkId);
+    
+    if (!story) {
+      return c.json({
+        error: 'Story not found',
+        message: 'The story for this spark does not exist.'
+      }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: story,
+      message: 'Story retrieved successfully'
+    });
+  } catch (error) {
+    console.error('Error getting story:', error);
+    return c.json({ 
+      error: 'Failed to get story',
       message: 'An unexpected error occurred. Please try again.'
     }, 500);
   }

@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import sparks from './src/routes/sparks'
+import stories from './src/routes/stories'
 
 const app = new Hono()
 
@@ -12,6 +13,7 @@ app.get('/health', (c) => {
 })
 
 app.route('/api/sparks', sparks)
+app.route('/api/stories', stories)
 
 export default {
   port: 3001,

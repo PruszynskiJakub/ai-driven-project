@@ -3,6 +3,7 @@ import {db} from '../db/database';
 import {sparks} from '../db/schema/sparks';
 import type {CreateSparkRequest, SparkResponse} from '../models/spark';
 import {v4 as uuidv4} from 'uuid';
+import { createStory } from './storyService';
 
 export async function getSparkById(id: string): Promise<SparkResponse | null> {
     const [spark] = await db.select().from(sparks).where(eq(sparks.id, id));
@@ -32,6 +33,9 @@ export async function createSpark(data: CreateSparkRequest): Promise<SparkRespon
     };
 
     await db.insert(sparks).values(sparkData);
+
+    // Auto-create empty Story for the new Spark
+    await createStory({ sparkId: id, content: '' });
 
     return {
         id: sparkData.id,
