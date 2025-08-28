@@ -33,6 +33,13 @@ This specification defines the implementation of the foundational "Spark" captur
 2. **Data Integrity**: Strong validation at API boundaries
 3. **Extensibility**: Schema designed for future Story expansion
 4. **Performance**: Efficient database operations with proper indexing
+5. **Immutability**: Sparks are permanent records that cannot be modified or deleted once created
+
+### Content Hierarchy Rules
+- **Sparks are immutable**: Once created, sparks serve as permanent inspiration records
+- **No updates/deletes**: Sparks cannot be modified or deleted (unlike Stories which are mutable)
+- **Read-only after creation**: Users can only create and read sparks
+- **Foundation for Stories**: Sparks serve as immutable reference points for story development
 
 ## Data Model
 
@@ -88,6 +95,15 @@ export const sparks = sqliteTable('sparks', {
 ```
 
 ## API Implementation
+
+### Complete API Surface
+Based on the immutability principle, Sparks support only read and create operations:
+
+- ✅ `POST /api/sparks` - Create new spark (specified below)
+- ✅ `GET /api/sparks` - List user's sparks (to be implemented)  
+- ✅ `GET /api/sparks/:id` - Get specific spark (to be implemented)
+- ❌ `PUT/PATCH /api/sparks/:id` - **Not supported** (sparks are immutable)
+- ❌ `DELETE /api/sparks/:id` - **Not supported** (sparks are permanent records)
 
 ### Endpoint: POST /api/sparks
 
@@ -213,6 +229,41 @@ export async function getSparkById(id: string): Promise<SparkResponse | null> {
   };
 }
 ```
+
+## Implementation Considerations & Fixes Required
+
+### Critical Issues to Address Before Implementation
+
+1. **Timestamp Format Inconsistency**: 
+   - SQL uses `DEFAULT CURRENT_TIMESTAMP` (SQLite format: `YYYY-MM-DD HH:MM:SS`)
+   - Service uses `new Date().toISOString()` (ISO format: `YYYY-MM-DDTHH:MM:SS.sssZ`)
+   - **Fix**: Use Drizzle's `$defaultFn(() => new Date().toISOString())` for consistency
+
+2. **Redundant Validation**:
+   - Both Zod validation (API layer) and SQL CHECK constraints (database layer)
+   - **Fix**: Remove SQL CHECK constraints, rely on Zod validation only
+
+3. **Error Response Inconsistency**:
+   - Success: `{success, data, message}` format
+   - Errors: Mixed `{error, message}` and `{error, details}` formats
+   - **Fix**: Standardize all responses to consistent format
+
+4. **Missing Database Migration Strategy**:
+   - No database initialization process specified
+   - **Fix**: Add migration files and initialization logic
+
+5. **Incomplete API Surface**:
+   - Missing `GET /api/sparks` (list) and `GET /api/sparks/:id` (retrieve) endpoints
+   - Service has `getSparkById` but no corresponding API handler
+   - **Fix**: Implement missing read endpoints
+
+### Recommended Implementation Order
+1. Fix timestamp format inconsistency (critical)
+2. Standardize error response format (affects all endpoints)  
+3. Add database migration strategy (infrastructure requirement)
+4. Implement missing GET endpoints (complete API surface)
+5. Remove redundant SQL validation (simplification)
+
 ## Conclusion
 
-This implementation provides a robust foundation for capturing Sparks with proper validation, error handling, and extensibility. The architecture supports the content hierarchy while maintaining simplicity for rapid idea capture. The specification ensures production-ready code with comprehensive testing and performance considerations.
+This specification provides a solid foundation for capturing Sparks with proper validation, error handling, and extensibility. The immutability principle simplifies the API design while supporting the content hierarchy. With the identified fixes implemented, this will be production-ready code that maintains simplicity for rapid idea capture.
