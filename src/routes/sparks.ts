@@ -1,7 +1,37 @@
 import { Hono } from 'hono';
-import { getSparkById, listSparks } from '../services/sparkService';
+import { validator } from 'hono/validator';
+import { getSparkById, listSparks, createSpark } from '../services/sparkService';
+import { CreateSparkSchema } from '../models/spark';
 
 const sparks = new Hono();
+
+sparks.post('/', 
+  validator('json', (value, c) => {
+    const parsed = CreateSparkSchema.safeParse(value);
+    if (!parsed.success) {
+      return c.json({ error: 'Invalid input', details: parsed.error.issues }, 400);
+    }
+    return parsed.data;
+  }),
+  async (c) => {
+    try {
+      const sparkData = c.req.valid('json');
+      const spark = await createSpark(sparkData);
+      
+      return c.json({
+        success: true,
+        data: spark,
+        message: 'Spark created successfully'
+      }, 201);
+    } catch (error) {
+      console.error('Error creating spark:', error);
+      return c.json({ 
+        error: 'Failed to create spark',
+        message: 'An unexpected error occurred. Please try again.'
+      }, 500);
+    }
+  }
+);
 
 sparks.get('/', async (c) => {
   try {
