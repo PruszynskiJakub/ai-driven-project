@@ -32,7 +32,15 @@ bun run tsc --noEmit
 
 - **Runtime**: Bun v1.1.34+ (JavaScript runtime, package manager, bundler, test runner)
 - **Language**: TypeScript with ESNext target
-- **Entry point**: `index.ts` - currently a minimal starter file
+- **Web Framework**: Hono (lightweight web framework)
+- **Entry point**: `index.ts` - Hono server with built-in Bun server
+- **Structure**: 
+  - `src/routes/` - API route handlers
+  - `src/models/` - Data models and validation
+  - `src/services/` - Business logic layer
+  - `src/db/` - Database schema and migrations
+  - `src/middleware/` - Auth, validation, logging
+  - `src/static/` - Frontend assets
 - **Configuration**: 
   - `tsconfig.json` - TypeScript configuration with strict mode enabled
   - `package.json` - minimal configuration with @types/bun dev dependency
@@ -48,7 +56,9 @@ The project uses strict TypeScript settings with:
 
 ## Development Notes
 
-Since this is a fresh Bun project with minimal setup, most development patterns will need to be established as the codebase grows. The current structure supports modern TypeScript/ESNext development with Bun's built-in capabilities for running, testing, and bundling.
+- Use Bun's built-in server with Hono (no need for Node.js server adapters)
+- API follows RESTful patterns with JSON responses
+- Server exports Bun-compatible object with port and fetch handler
 
 ## Domain Glossary
 
