@@ -22,4 +22,4 @@ As a user I want to generate multiple stories for one spark. - REJECTED because 
 
 What are the reasons behind story modification
 
-> Articles and videos are just someone else story.
+> Articles and youtube are just someone else story.
