@@ -90,3 +90,16 @@ Spark (1)
 - Manual snapshots capture complete Draft/Final states
 - Failed drafts disappear (no clutter preservation)
 - Artifacts can be reused as source material for new artifacts
+
+## Testing Standards
+
+**Test Architecture:**
+- Use in-memory SQLite databases for all tests (via `test/setup.ts`)
+- Test through HTTP endpoints + direct database state verification
+- Treat business logic as black box - only test inputs/outputs and DB effects
+- Factory pattern for test data creation (`test/factories.ts`)
+
+**Test Requirements:**
+- Verify database state changes for all write operations
+- Test HTTP endpoints as primary interface (not internal service methods)
+- Timestamp progression testing for time-sensitive operations
