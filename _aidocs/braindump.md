@@ -13,6 +13,9 @@ As a user I want to be able to pin some sparks.
 As a user I want to be able to filter and sort sparks.
 As a user I want to paginate my sparks.
 As a user I want to see the number of artifacts, and publications with stats for all publications. 
+As a user I want to select the AI model for text generation
+As a user I want to select the AI model for image generation
+As a user I want to select the AI model for video generation
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
