@@ -9,6 +9,23 @@
 - Final artifact is immutable, yet might be duplicated
 - To finalize artifact user must take a manual action
 
+
+Refined Artifact Lifecycle
+
+1. Create artifact (Draft v1) → AI generates initial content
+2. User reviews generated content → provides feedback
+3. AI generates new version based on feedback → repeat cycle
+4. User manually edits if needed (creates new version)
+5. User finalizes when satisfied
+
+
+1. Cascade Delete: Spark deletion removes all artifacts - no orphaned data
+2. No ContentHash: Simpler versioning without hash complexity
+3. AI-Agnostic Artifacts: Artifact system doesn't track AI generation state
+4. Sequential Operations: No concurrent feedback/editing during generation
+
+Spark deletion → Story deletion → Artifacts deletion
+
 ## Extended Specification
 
 ### Artifact Data Model

@@ -1,16 +1,15 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { setupTestDatabase, cleanupTestDatabase, clearTestData, getSparkFromDb, getStoryFromDb, getStoryBySparkIdFromDb, countSparksInDb, countStoriesInDb } from './setup';
-import { createTestApp } from './testApp';
+import { testApp } from './testApp';
 import { setTestDb } from '../src/db/database';
 import { createValidSparkData, createValidStoryUpdateData, createTestSparkInDb, createTestStoryInDb, generateLongString } from './factories';
 
-let app: any;
 let testDb: any;
 
 beforeEach(() => {
   testDb = setupTestDatabase();
   setTestDb(testDb);
-  app = createTestApp();
+  // Use shared testApp instance
   clearTestData();
 });
 
@@ -27,7 +26,7 @@ describe('Integration Tests', () => {
       initialThoughts: 'This is an integration test'
     });
 
-    const createResponse = await app.request('/api/sparks', {
+    const createResponse = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -38,7 +37,7 @@ describe('Integration Tests', () => {
     const sparkId = createdSpark.data.id;
 
     // 2. Verify auto-story creation via GET /api/sparks/:id/story
-    const storyResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const storyResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     
     expect(storyResponse.status).toBe(200);
     const storyData = await storyResponse.json();
@@ -47,7 +46,7 @@ describe('Integration Tests', () => {
     expect(storyData.data.content).toBe('');
 
     // 3. Verify spark retrieval via GET /api/sparks/:id
-    const sparkResponse = await app.request(`/api/sparks/${sparkId}`);
+    const sparkResponse = await testApp.request(`/api/sparks/${sparkId}`);
     
     expect(sparkResponse.status).toBe(200);
     const retrievedSpark = await sparkResponse.json();
@@ -57,7 +56,7 @@ describe('Integration Tests', () => {
     expect(retrievedSpark.data.initialThoughts).toBe(sparkData.initialThoughts);
 
     // 4. Verify spark appears in list via GET /api/sparks
-    const listResponse = await app.request('/api/sparks');
+    const listResponse = await testApp.request('/api/sparks');
     
     expect(listResponse.status).toBe(200);
     const sparksList = await listResponse.json();
@@ -78,7 +77,7 @@ describe('Integration Tests', () => {
   test('story update workflow', async () => {
     // 1. Create spark (auto-creates story)
     const sparkData = createValidSparkData();
-    const createResponse = await app.request('/api/sparks', {
+    const createResponse = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -88,7 +87,7 @@ describe('Integration Tests', () => {
     const sparkId = createdSpark.data.id;
 
     // 2. Get the auto-created story
-    const storyResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const storyResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const storyData = await storyResponse.json();
     const storyId = storyData.data.id;
 
@@ -98,7 +97,7 @@ describe('Integration Tests', () => {
       isAutoSave: false
     });
 
-    const updateResponse = await app.request(`/api/stories/${storyId}`, {
+    const updateResponse = await testApp.request(`/api/stories/${storyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -109,13 +108,13 @@ describe('Integration Tests', () => {
     expect(updatedStory.content).toBe('Updated story content');
 
     // 4. Verify update via GET /api/stories/:id
-    const getUpdatedResponse = await app.request(`/api/stories/${storyId}`);
+    const getUpdatedResponse = await testApp.request(`/api/stories/${storyId}`);
     const retrievedStory = await getUpdatedResponse.json();
     
     expect(retrievedStory.content).toBe('Updated story content');
 
     // 5. Verify via spark endpoint as well
-    const sparkStoryResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const sparkStoryResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const sparkStoryData = await sparkStoryResponse.json();
     
     expect(sparkStoryData.data.content).toBe('Updated story content');
@@ -141,7 +140,7 @@ describe('Integration Tests', () => {
 
     // 2. Auto-save story via PATCH /api/stories/:id/autosave
     const autoSaveData = { content: 'Auto-saved content' };
-    const autoSaveResponse = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const autoSaveResponse = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -152,7 +151,7 @@ describe('Integration Tests', () => {
     expect(autoSaveResult.lastAutoSavedAt).not.toBe(originalLastAutoSavedAt);
 
     // 3. Verify via GET /api/stories/:id
-    const getStoryResponse = await app.request(`/api/stories/${testStory.id}`);
+    const getStoryResponse = await testApp.request(`/api/stories/${testStory.id}`);
     const retrievedStory = await getStoryResponse.json();
     
     expect(retrievedStory.content).toBe('Auto-saved content');
@@ -183,16 +182,16 @@ describe('Integration Tests', () => {
     });
 
     // Get data from different endpoints
-    const sparkFromSparkEndpoint = await app.request(`/api/sparks/${testSpark.id}`);
+    const sparkFromSparkEndpoint = await testApp.request(`/api/sparks/${testSpark.id}`);
     const sparkData = await sparkFromSparkEndpoint.json();
 
-    const storyFromStoryEndpoint = await app.request(`/api/stories/${testStory.id}`);
+    const storyFromStoryEndpoint = await testApp.request(`/api/stories/${testStory.id}`);
     const storyFromStoryData = await storyFromStoryEndpoint.json();
 
-    const storyFromSparkEndpoint = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const storyFromSparkEndpoint = await testApp.request(`/api/sparks/${testSpark.id}/story`);
     const storyFromSparkData = await storyFromSparkEndpoint.json();
 
-    const sparksFromListEndpoint = await app.request('/api/sparks');
+    const sparksFromListEndpoint = await testApp.request('/api/sparks');
     const sparksList = await sparksFromListEndpoint.json();
 
     // Verify consistency
@@ -230,18 +229,18 @@ describe('Integration Tests', () => {
     // Perform concurrent operations
     const promises = [
       // Multiple autosaves
-      app.request(`/api/stories/${testStory.id}/autosave`, {
+      testApp.request(`/api/stories/${testStory.id}/autosave`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: 'Autosave 1' })
       }),
-      app.request(`/api/stories/${testStory.id}/autosave`, {
+      testApp.request(`/api/stories/${testStory.id}/autosave`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ content: 'Autosave 2' })
       }),
       // Regular update
-      app.request(`/api/stories/${testStory.id}`, {
+      testApp.request(`/api/stories/${testStory.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -250,8 +249,8 @@ describe('Integration Tests', () => {
         })
       }),
       // Read operations
-      app.request(`/api/stories/${testStory.id}`),
-      app.request(`/api/sparks/${testSpark.id}/story`)
+      testApp.request(`/api/stories/${testStory.id}`),
+      testApp.request(`/api/sparks/${testSpark.id}/story`)
     ];
 
     const results = await Promise.all(promises);
@@ -266,7 +265,7 @@ describe('Integration Tests', () => {
     });
 
     // Final state should be consistent
-    const finalStoryResponse = await app.request(`/api/stories/${testStory.id}`);
+    const finalStoryResponse = await testApp.request(`/api/stories/${testStory.id}`);
     const finalStory = await finalStoryResponse.json();
     
     expect(finalStory.id).toBe(testStory.id);
@@ -283,7 +282,7 @@ describe('Integration Tests', () => {
       initialThoughts: 'Starting complex workflow'
     });
 
-    const createSparkResponse = await app.request('/api/sparks', {
+    const createSparkResponse = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -293,7 +292,7 @@ describe('Integration Tests', () => {
     const sparkId = createdSpark.data.id;
 
     // 2. Get auto-created story
-    const initialStoryResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const initialStoryResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const initialStory = await initialStoryResponse.json();
     const storyId = initialStory.data.id;
 
@@ -305,7 +304,7 @@ describe('Integration Tests', () => {
       isAutoSave: false
     });
 
-    const manualUpdateResponse = await app.request(`/api/stories/${storyId}`, {
+    const manualUpdateResponse = await testApp.request(`/api/stories/${storyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(manualUpdateData)
@@ -320,7 +319,7 @@ describe('Integration Tests', () => {
     // 4. Auto-save story
     await new Promise(resolve => setTimeout(resolve, 10));
     
-    const autoSaveResponse = await app.request(`/api/stories/${storyId}/autosave`, {
+    const autoSaveResponse = await testApp.request(`/api/stories/${storyId}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: 'Auto-saved content' })
@@ -337,7 +336,7 @@ describe('Integration Tests', () => {
       isAutoSave: true
     });
 
-    const autoUpdateResponse = await app.request(`/api/stories/${storyId}`, {
+    const autoUpdateResponse = await testApp.request(`/api/stories/${storyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoUpdateData)
@@ -347,16 +346,16 @@ describe('Integration Tests', () => {
     const finalStory = await autoUpdateResponse.json();
 
     // 6. Verify final state from all endpoints
-    const finalSparkResponse = await app.request(`/api/sparks/${sparkId}`);
+    const finalSparkResponse = await testApp.request(`/api/sparks/${sparkId}`);
     const finalSparkData = await finalSparkResponse.json();
 
-    const finalStoryDirectResponse = await app.request(`/api/stories/${storyId}`);
+    const finalStoryDirectResponse = await testApp.request(`/api/stories/${storyId}`);
     const finalStoryDirect = await finalStoryDirectResponse.json();
 
-    const finalStoryViaSparkResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const finalStoryViaSparkResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const finalStoryViaSpark = await finalStoryViaSparkResponse.json();
 
-    const finalSparksListResponse = await app.request('/api/sparks');
+    const finalSparksListResponse = await testApp.request('/api/sparks');
     const finalSparksList = await finalSparksListResponse.json();
 
     // 7. Verify all data consistency
@@ -392,14 +391,14 @@ describe('Integration Tests', () => {
   test('workflow error handling', async () => {
     // 1. Try to get story for non-existent spark
     const nonExistentSparkId = '550e8400-e29b-41d4-a716-446655440000';
-    const nonExistentSparkStoryResponse = await app.request(`/api/sparks/${nonExistentSparkId}/story`);
+    const nonExistentSparkStoryResponse = await testApp.request(`/api/sparks/${nonExistentSparkId}/story`);
     expect(nonExistentSparkStoryResponse.status).toBe(404);
 
     // 2. Try to update non-existent story
     const nonExistentStoryId = '550e8400-e29b-41d4-a716-446655440001';
     const updateData = createValidStoryUpdateData();
     
-    const updateNonExistentResponse = await app.request(`/api/stories/${nonExistentStoryId}`, {
+    const updateNonExistentResponse = await testApp.request(`/api/stories/${nonExistentStoryId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -407,7 +406,7 @@ describe('Integration Tests', () => {
     expect(updateNonExistentResponse.status).toBe(404);
 
     // 3. Try to autosave non-existent story
-    const autoSaveNonExistentResponse = await app.request(`/api/stories/${nonExistentStoryId}/autosave`, {
+    const autoSaveNonExistentResponse = await testApp.request(`/api/stories/${nonExistentStoryId}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: 'content' })
@@ -430,7 +429,7 @@ describe('Integration Tests', () => {
       initialThoughts: generateLongString(500)
     });
 
-    const createResponse = await app.request('/api/sparks', {
+    const createResponse = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(maxTitleSparkData)
@@ -441,7 +440,7 @@ describe('Integration Tests', () => {
     const sparkId = createdSpark.data.id;
 
     // 2. Update story with maximum content length
-    const storyResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const storyResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const storyData = await storyResponse.json();
     const storyId = storyData.data.id;
 
@@ -449,7 +448,7 @@ describe('Integration Tests', () => {
       content: generateLongString(50000)
     });
 
-    const updateResponse = await app.request(`/api/stories/${storyId}`, {
+    const updateResponse = await testApp.request(`/api/stories/${storyId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(maxContentUpdate)
@@ -458,11 +457,11 @@ describe('Integration Tests', () => {
     expect(updateResponse.status).toBe(200);
 
     // 3. Verify via all endpoints
-    const finalStoryResponse = await app.request(`/api/stories/${storyId}`);
+    const finalStoryResponse = await testApp.request(`/api/stories/${storyId}`);
     const finalStory = await finalStoryResponse.json();
     expect(finalStory.content).toHaveLength(50000);
 
-    const storyViaSparkResponse = await app.request(`/api/sparks/${sparkId}/story`);
+    const storyViaSparkResponse = await testApp.request(`/api/sparks/${sparkId}/story`);
     const storyViaSpark = await storyViaSparkResponse.json();
     expect(storyViaSpark.data.content).toHaveLength(50000);
 

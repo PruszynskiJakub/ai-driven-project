@@ -1,16 +1,15 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { setupTestDatabase, cleanupTestDatabase, clearTestData, getSparkFromDb, getStoryBySparkIdFromDb, countSparksInDb, countStoriesInDb } from './setup';
-import { createTestApp } from './testApp';
+import { testApp } from './testApp';
 import { setTestDb } from '../src/db/database';
 import { createValidSparkData, createInvalidSparkData, createTestSparkInDb, createTestStoryInDb, generateLongString } from './factories';
 
-let app: any;
 let testDb: any;
 
 beforeEach(() => {
   testDb = setupTestDatabase();
   setTestDb(testDb);
-  app = createTestApp();
+  // Use shared testApp instance
   clearTestData();
 });
 
@@ -26,7 +25,7 @@ describe('POST /api/sparks', () => {
       initialThoughts: 'This is a great idea'
     });
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -53,7 +52,7 @@ describe('POST /api/sparks', () => {
   test('creates spark with title only (initialThoughts omitted)', async () => {
     const sparkData = { title: 'Title Only Spark' };
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -73,7 +72,7 @@ describe('POST /api/sparks', () => {
   test('auto-creates empty story for new spark', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -94,7 +93,7 @@ describe('POST /api/sparks', () => {
   test('returns correct response structure with 201 status', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -116,7 +115,7 @@ describe('POST /api/sparks', () => {
     const beforeTime = new Date().toISOString();
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -135,7 +134,7 @@ describe('POST /api/sparks', () => {
   test('generates valid UUID for spark ID', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -150,7 +149,7 @@ describe('POST /api/sparks', () => {
   test('rejects missing title (400)', async () => {
     const invalidData = createInvalidSparkData('missing-title');
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -169,7 +168,7 @@ describe('POST /api/sparks', () => {
   test('rejects empty title after trim (400)', async () => {
     const invalidData = { title: '   ', initialThoughts: 'some thoughts' };
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -183,7 +182,7 @@ describe('POST /api/sparks', () => {
   test('rejects title over 255 characters (400)', async () => {
     const invalidData = createInvalidSparkData('title-too-long');
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -197,7 +196,7 @@ describe('POST /api/sparks', () => {
   test('rejects initialThoughts over 500 characters (400)', async () => {
     const invalidData = createInvalidSparkData('thoughts-too-long');
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -211,7 +210,7 @@ describe('POST /api/sparks', () => {
   test('rejects invalid request body structure (400)', async () => {
     const invalidData = 'not json object';
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: invalidData
@@ -223,7 +222,7 @@ describe('POST /api/sparks', () => {
   test('rejects non-string title (400)', async () => {
     const invalidData = createInvalidSparkData('non-string-title');
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -237,7 +236,7 @@ describe('POST /api/sparks', () => {
   test('rejects non-string initialThoughts (400)', async () => {
     const invalidData = createInvalidSparkData('non-string-thoughts');
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -252,7 +251,7 @@ describe('POST /api/sparks', () => {
   test('verifies spark exists in database after creation', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -270,7 +269,7 @@ describe('POST /api/sparks', () => {
   test('verifies auto-created story exists with correct sparkId', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -286,7 +285,7 @@ describe('POST /api/sparks', () => {
   test('verifies story has empty content initially', async () => {
     const sparkData = createValidSparkData();
 
-    const response = await app.request('/api/sparks', {
+    const response = await testApp.request('/api/sparks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(sparkData)
@@ -302,7 +301,7 @@ describe('POST /api/sparks', () => {
 describe('GET /api/sparks', () => {
   // Happy Path Tests
   test('returns empty array when no sparks exist', async () => {
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -318,7 +317,7 @@ describe('GET /api/sparks', () => {
       initialThoughts: 'Test thoughts'
     });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -341,7 +340,7 @@ describe('GET /api/sparks', () => {
       createdAt: '2023-12-01T00:00:00.000Z'
     });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -354,7 +353,7 @@ describe('GET /api/sparks', () => {
   test('returns correct response structure with 200 status', async () => {
     await createTestSparkInDb();
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -371,7 +370,7 @@ describe('GET /api/sparks', () => {
       initialThoughts: 'These are my thoughts'
     });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     expect(result.data[0].initialThoughts).toBe('These are my thoughts');
@@ -383,7 +382,7 @@ describe('GET /api/sparks', () => {
       initialThoughts: null
     });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     expect(result.data[0].initialThoughts).toBeUndefined();
@@ -393,7 +392,7 @@ describe('GET /api/sparks', () => {
     await createTestSparkInDb({ userId: 'default_user' });
     await createTestSparkInDb({ userId: 'other_user' });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     expect(result.data).toHaveLength(1);
@@ -407,7 +406,7 @@ describe('GET /api/sparks', () => {
       initialThoughts: null
     });
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     expect(result.data[0]).not.toHaveProperty('initialThoughts');
@@ -416,7 +415,7 @@ describe('GET /api/sparks', () => {
   test('preserves all required fields', async () => {
     await createTestSparkInDb();
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     const spark = result.data[0];
@@ -429,7 +428,7 @@ describe('GET /api/sparks', () => {
   test('formats timestamps correctly as ISO strings', async () => {
     await createTestSparkInDb();
 
-    const response = await app.request('/api/sparks');
+    const response = await testApp.request('/api/sparks');
     const result = await response.json();
     
     const spark = result.data[0];
@@ -446,7 +445,7 @@ describe('GET /api/sparks/:id', () => {
       initialThoughts: 'Test thoughts'
     });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -461,7 +460,7 @@ describe('GET /api/sparks/:id', () => {
   test('returns correct response structure with 200 status', async () => {
     const testSpark = await createTestSparkInDb();
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -476,7 +475,7 @@ describe('GET /api/sparks/:id', () => {
       initialThoughts: 'Present thoughts'
     });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
     const result = await response.json();
     
     expect(result.data.initialThoughts).toBe('Present thoughts');
@@ -487,7 +486,7 @@ describe('GET /api/sparks/:id', () => {
       initialThoughts: null
     });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
     const result = await response.json();
     
     expect(result.data.initialThoughts).toBeUndefined();
@@ -497,7 +496,7 @@ describe('GET /api/sparks/:id', () => {
   test('returns 404 for non-existent spark ID', async () => {
     const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
 
-    const response = await app.request(`/api/sparks/${nonExistentId}`);
+    const response = await testApp.request(`/api/sparks/${nonExistentId}`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -509,7 +508,7 @@ describe('GET /api/sparks/:id', () => {
   test('returns 404 for valid UUID that doesn\'t exist', async () => {
     const validButNonExistentUuid = '123e4567-e89b-12d3-a456-426614174000';
 
-    const response = await app.request(`/api/sparks/${validButNonExistentUuid}`);
+    const response = await testApp.request(`/api/sparks/${validButNonExistentUuid}`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -519,14 +518,14 @@ describe('GET /api/sparks/:id', () => {
 
   // Parameter Validation Tests
   test('handles invalid UUID format gracefully', async () => {
-    const response = await app.request('/api/sparks/invalid-uuid');
+    const response = await testApp.request('/api/sparks/invalid-uuid');
 
     // Should still try to query and return 404, not crash
     expect(response.status).toBe(404);
   });
 
   test('handles empty ID parameter', async () => {
-    const response = await app.request('/api/sparks/');
+    const response = await testApp.request('/api/sparks/');
 
     // This actually returns 404 because the route is set up this way
     expect(response.status).toBe(404);
@@ -539,7 +538,7 @@ describe('GET /api/sparks/:id', () => {
       initialThoughts: 'Exact thoughts'
     });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
     const result = await response.json();
     
     expect(result.data.id).toBe(testSpark.id);
@@ -552,7 +551,7 @@ describe('GET /api/sparks/:id', () => {
   test('timestamps are properly formatted', async () => {
     const testSpark = await createTestSparkInDb();
 
-    const response = await app.request(`/api/sparks/${testSpark.id}`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}`);
     const result = await response.json();
     
     expect(result.data.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
@@ -569,7 +568,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
       content: 'Test story content'
     });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -585,7 +584,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
     const testSpark = await createTestSparkInDb();
     await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -599,7 +598,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
   test('returns 404 for non-existent spark ID', async () => {
     const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
 
-    const response = await app.request(`/api/sparks/${nonExistentId}/story`);
+    const response = await testApp.request(`/api/sparks/${nonExistentId}/story`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -612,7 +611,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
     const testSpark = await createTestSparkInDb();
     // Don't create a story
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -622,7 +621,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
 
   // Parameter Tests
   test('handles invalid sparkId UUID format', async () => {
-    const response = await app.request('/api/sparks/invalid-uuid/story');
+    const response = await testApp.request('/api/sparks/invalid-uuid/story');
 
     expect(response.status).toBe(404);
   });
@@ -632,7 +631,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
     const result = await response.json();
     
     expect(result.data.sparkId).toBe(testSpark.id);
@@ -642,7 +641,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
     const testSpark = await createTestSparkInDb();
     await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
     const result = await response.json();
     
     expect(result.data).toHaveProperty('id');
@@ -657,7 +656,7 @@ describe('GET /api/sparks/:sparkId/story', () => {
     const testSpark = await createTestSparkInDb();
     await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/sparks/${testSpark.id}/story`);
+    const response = await testApp.request(`/api/sparks/${testSpark.id}/story`);
     const result = await response.json();
     
     expect(result.data.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);

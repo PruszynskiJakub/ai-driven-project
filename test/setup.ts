@@ -3,6 +3,7 @@ import { drizzle } from 'drizzle-orm/bun-sqlite';
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator';
 import { sparks } from '../src/db/schema/sparks';
 import { stories } from '../src/db/schema/stories';
+import { artifacts, artifactVersions } from '../src/db/schema/artifacts';
 import { eq } from 'drizzle-orm';
 
 let testDb: Database;
@@ -10,7 +11,11 @@ let db: ReturnType<typeof drizzle>;
 
 export function setupTestDatabase() {
   testDb = new Database(':memory:');
-  db = drizzle(testDb);
+  
+  // Enable foreign key constraints in SQLite
+  testDb.exec('PRAGMA foreign_keys = ON');
+  
+  db = drizzle(testDb, { schema: { sparks, stories, artifacts, artifactVersions } });
   
   // Create tables manually since we might not have migrations yet
   testDb.exec(`
@@ -35,6 +40,32 @@ export function setupTestDatabase() {
     )
   `);
   
+  testDb.exec(`
+    CREATE TABLE IF NOT EXISTS artifacts (
+      id TEXT PRIMARY KEY,
+      story_id TEXT NOT NULL REFERENCES stories(id) ON DELETE CASCADE,
+      type TEXT NOT NULL,
+      state TEXT NOT NULL DEFAULT 'draft',
+      current_version INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL,
+      finalized_at TEXT,
+      source_artifact_id TEXT REFERENCES artifacts(id) ON DELETE SET NULL
+    )
+  `);
+  
+  testDb.exec(`
+    CREATE TABLE IF NOT EXISTS artifact_versions (
+      id TEXT PRIMARY KEY,
+      artifact_id TEXT NOT NULL REFERENCES artifacts(id) ON DELETE CASCADE,
+      version INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      user_feedback TEXT,
+      created_at TEXT NOT NULL,
+      generation_type TEXT NOT NULL
+    )
+  `);
+  
   return db;
 }
 
@@ -50,6 +81,8 @@ export function getTestDb() {
 
 export function clearTestData() {
   if (testDb) {
+    testDb.exec('DELETE FROM artifact_versions');
+    testDb.exec('DELETE FROM artifacts');
     testDb.exec('DELETE FROM stories');
     testDb.exec('DELETE FROM sparks');
   }
@@ -78,5 +111,30 @@ export async function countSparksInDb() {
 
 export async function countStoriesInDb() {
   const result = await db.select().from(stories);
+  return result.length;
+}
+
+export async function getArtifactFromDb(id: string) {
+  const [artifact] = await db.select().from(artifacts).where(eq(artifacts.id, id));
+  return artifact;
+}
+
+export async function getArtifactVersionFromDb(id: string) {
+  const [version] = await db.select().from(artifactVersions).where(eq(artifactVersions.id, id));
+  return version;
+}
+
+export async function getArtifactVersionsByArtifactIdFromDb(artifactId: string) {
+  const versions = await db.select().from(artifactVersions).where(eq(artifactVersions.artifactId, artifactId));
+  return versions;
+}
+
+export async function countArtifactsInDb() {
+  const result = await db.select().from(artifacts);
+  return result.length;
+}
+
+export async function countArtifactVersionsInDb() {
+  const result = await db.select().from(artifactVersions);
   return result.length;
 }

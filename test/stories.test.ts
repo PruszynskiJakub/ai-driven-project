@@ -1,16 +1,15 @@
 import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
 import { setupTestDatabase, cleanupTestDatabase, clearTestData, getStoryFromDb, getStoryBySparkIdFromDb } from './setup';
-import { createTestApp } from './testApp';
+import { testApp } from './testApp';
 import { setTestDb } from '../src/db/database';
 import { createValidStoryUpdateData, createInvalidStoryUpdateData, createTestSparkInDb, createTestStoryInDb, generateLongString } from './factories';
 
-let app: any;
 let testDb: any;
 
 beforeEach(() => {
   testDb = setupTestDatabase();
   setTestDb(testDb);
-  app = createTestApp();
+  // Use shared testApp instance
   clearTestData();
 });
 
@@ -27,7 +26,7 @@ describe('GET /api/stories/:storyId', () => {
       content: 'Test story content'
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -41,7 +40,7 @@ describe('GET /api/stories/:storyId', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
 
     expect(response.status).toBe(200);
     const result = await response.json();
@@ -58,7 +57,7 @@ describe('GET /api/stories/:storyId', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
     const result = await response.json();
     
     expect(result.createdAt).toBeDefined();
@@ -68,20 +67,20 @@ describe('GET /api/stories/:storyId', () => {
 
   // Parameter Validation Tests
   test('returns 400 when storyId parameter is missing', async () => {
-    const response = await app.request('/api/stories/');
+    const response = await testApp.request('/api/stories/');
 
     expect(response.status).toBe(404); // Actually hits a different route, not the story route
   });
 
   test('returns 400 when storyId is empty string', async () => {
-    const response = await app.request('/api/stories/');
+    const response = await testApp.request('/api/stories/');
 
     // This actually hits a different route (404 Not Found)
     expect(response.status).toBe(404);
   });
 
   test('handles invalid UUID format gracefully', async () => {
-    const response = await app.request('/api/stories/invalid-uuid');
+    const response = await testApp.request('/api/stories/invalid-uuid');
 
     // Should try to query and return 404, not crash
     expect(response.status).toBe(404);
@@ -91,7 +90,7 @@ describe('GET /api/stories/:storyId', () => {
   test('returns 404 for non-existent story ID', async () => {
     const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
 
-    const response = await app.request(`/api/stories/${nonExistentId}`);
+    const response = await testApp.request(`/api/stories/${nonExistentId}`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -102,7 +101,7 @@ describe('GET /api/stories/:storyId', () => {
   test('returns 404 for valid UUID that doesn\'t exist', async () => {
     const validButNonExistentUuid = '123e4567-e89b-12d3-a456-426614174000';
 
-    const response = await app.request(`/api/stories/${validButNonExistentUuid}`);
+    const response = await testApp.request(`/api/stories/${validButNonExistentUuid}`);
 
     expect(response.status).toBe(404);
     const result = await response.json();
@@ -118,7 +117,7 @@ describe('GET /api/stories/:storyId', () => {
       content: 'Exact match content'
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
     const result = await response.json();
     
     expect(result.id).toBe(testStory.id);
@@ -133,7 +132,7 @@ describe('GET /api/stories/:storyId', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
     const result = await response.json();
     
     expect(result.sparkId).toBe(testSpark.id);
@@ -147,7 +146,7 @@ describe('GET /api/stories/:storyId', () => {
       content: testContent
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
     const result = await response.json();
     
     expect(result.content).toBe(testContent);
@@ -157,7 +156,7 @@ describe('GET /api/stories/:storyId', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}`);
+    const response = await testApp.request(`/api/stories/${testStory.id}`);
     const result = await response.json();
     
     expect(result.createdAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/);
@@ -180,7 +179,7 @@ describe('PUT /api/stories/:storyId', () => {
       isAutoSave: false
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -205,7 +204,7 @@ describe('PUT /api/stories/:storyId', () => {
       isAutoSave: true
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -226,7 +225,7 @@ describe('PUT /api/stories/:storyId', () => {
       isAutoSave: false
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -249,7 +248,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData();
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -270,7 +269,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ isAutoSave: true });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -291,7 +290,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ isAutoSave: false });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -309,7 +308,7 @@ describe('PUT /api/stories/:storyId', () => {
       content: 'New updated content'
     });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -330,7 +329,7 @@ describe('PUT /api/stories/:storyId', () => {
   test('returns 400 when storyId parameter is missing', async () => {
     const updateData = createValidStoryUpdateData();
 
-    const response = await app.request('/api/stories/', {
+    const response = await testApp.request('/api/stories/', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -342,7 +341,7 @@ describe('PUT /api/stories/:storyId', () => {
   test('returns 400 when storyId is empty string', async () => {
     const updateData = createValidStoryUpdateData();
 
-    const response = await app.request('/api/stories/', {
+    const response = await testApp.request('/api/stories/', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -359,7 +358,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const invalidData = createInvalidStoryUpdateData('content-too-long');
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -372,7 +371,7 @@ describe('PUT /api/stories/:storyId', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: 'invalid json'
@@ -387,7 +386,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const invalidData = createInvalidStoryUpdateData('non-string-content');
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -402,7 +401,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const invalidData = createInvalidStoryUpdateData('invalid-autosave');
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -417,7 +416,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = { content: 'Valid content without isAutoSave' };
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -433,7 +432,7 @@ describe('PUT /api/stories/:storyId', () => {
     const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
     const updateData = createValidStoryUpdateData();
 
-    const response = await app.request(`/api/stories/${nonExistentId}`, {
+    const response = await testApp.request(`/api/stories/${nonExistentId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -448,7 +447,7 @@ describe('PUT /api/stories/:storyId', () => {
     const nonExistentId = '123e4567-e89b-12d3-a456-426614174000';
     const updateData = createValidStoryUpdateData();
 
-    const response = await app.request(`/api/stories/${nonExistentId}`, {
+    const response = await testApp.request(`/api/stories/${nonExistentId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -466,7 +465,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ content: '' });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -484,7 +483,7 @@ describe('PUT /api/stories/:storyId', () => {
     const maxContent = generateLongString(50000);
     const updateData = createValidStoryUpdateData({ content: maxContent });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -502,7 +501,7 @@ describe('PUT /api/stories/:storyId', () => {
     const specialContent = 'Special chars: áéíóú ñü @#$%^&*()[]{}|\\:";\'<>?,./~`';
     const updateData = createValidStoryUpdateData({ content: specialContent });
 
-    const response = await app.request(`/api/stories/${testStory.id}`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -520,7 +519,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ content: 'DB verified content' });
 
-    await app.request(`/api/stories/${testStory.id}`, {
+    await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -540,7 +539,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData();
 
-    await app.request(`/api/stories/${testStory.id}`, {
+    await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -560,7 +559,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ isAutoSave: true });
 
-    await app.request(`/api/stories/${testStory.id}`, {
+    await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -580,7 +579,7 @@ describe('PUT /api/stories/:storyId', () => {
 
     const updateData = createValidStoryUpdateData({ isAutoSave: false });
 
-    await app.request(`/api/stories/${testStory.id}`, {
+    await testApp.request(`/api/stories/${testStory.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(updateData)
@@ -602,7 +601,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Auto-saved content' };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -628,7 +627,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Auto-saved content' };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -645,7 +644,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Auto-saved content' };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -662,7 +661,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
   test('returns 400 when storyId parameter is missing', async () => {
     const autoSaveData = { content: 'Content' };
 
-    const response = await app.request('/api/stories//autosave', {
+    const response = await testApp.request('/api/stories//autosave', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -675,7 +674,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
   test('returns 400 when storyId is empty string', async () => {
     const autoSaveData = { content: 'Content' };
 
-    const response = await app.request('/api/stories/%20/autosave', {
+    const response = await testApp.request('/api/stories/%20/autosave', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -691,7 +690,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const invalidData = {}; // missing content
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -706,7 +705,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const invalidData = { content: 123 };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(invalidData)
@@ -719,7 +718,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
     const testSpark = await createTestSparkInDb();
     const testStory = await createTestStoryInDb({ sparkId: testSpark.id });
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: 'invalid json'
@@ -733,7 +732,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
     const nonExistentId = '550e8400-e29b-41d4-a716-446655440000';
     const autoSaveData = { content: 'Content' };
 
-    const response = await app.request(`/api/stories/${nonExistentId}/autosave`, {
+    const response = await testApp.request(`/api/stories/${nonExistentId}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -750,7 +749,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: '' };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -770,7 +769,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
     const largeContent = generateLongString(10000);
     const autoSaveData = { content: largeContent };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -789,7 +788,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
     const specialContent = 'Unicode: 你好 🌟 áéíóú ñü @#$%^&*()';
     const autoSaveData = { content: specialContent };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -808,7 +807,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
     const formattedContent = 'Line 1\nLine 2\r\nLine 3\tTabbed\n\nDouble break';
     const autoSaveData = { content: formattedContent };
 
-    const response = await app.request(`/api/stories/${testStory.id}/autosave`, {
+    const response = await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -827,7 +826,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Database verified content' };
 
-    await app.request(`/api/stories/${testStory.id}/autosave`, {
+    await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -847,7 +846,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Auto-saved content' };
 
-    await app.request(`/api/stories/${testStory.id}/autosave`, {
+    await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -866,7 +865,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'Auto-saved content' };
 
-    await app.request(`/api/stories/${testStory.id}/autosave`, {
+    await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)
@@ -883,7 +882,7 @@ describe('PATCH /api/stories/:storyId/autosave', () => {
 
     const autoSaveData = { content: 'New content' };
 
-    await app.request(`/api/stories/${testStory.id}/autosave`, {
+    await testApp.request(`/api/stories/${testStory.id}/autosave`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(autoSaveData)

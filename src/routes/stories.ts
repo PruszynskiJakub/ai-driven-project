@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { getStoryById, getStoryBySparkId, updateStory, autoSaveStory } from '../services/storyService';
+import { getArtifactsByStoryId } from '../services/artifactService';
 import { UpdateStorySchema } from '../models/story';
 import { z } from 'zod';
 
@@ -71,6 +72,30 @@ stories.patch('/:storyId/autosave', zValidator('json', z.object({ content: z.str
     } catch (error) {
         console.error('Error auto-saving story:', error);
         return c.json({ error: 'Internal server error' }, 500);
+    }
+});
+
+// Get Artifacts by Story ID
+stories.get('/:storyId/artifacts', async (c) => {
+    const storyId = c.req.param('storyId');
+    
+    if (!storyId) {
+        return c.json({ error: 'Story ID is required' }, 400);
+    }
+
+    try {
+        const artifacts = await getArtifactsByStoryId(storyId);
+        
+        return c.json({
+            success: true,
+            data: artifacts
+        });
+    } catch (error) {
+        console.error('Error fetching story artifacts:', error);
+        return c.json({ 
+            error: 'Failed to retrieve story artifacts',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        }, 500);
     }
 });
 
