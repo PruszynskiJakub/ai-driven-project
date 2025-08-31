@@ -27,3 +27,5 @@ As a user I want to generate multiple stories for one spark. - REJECTED because 
 What are the reasons behind story modification
 
 > Articles and youtube are just someone else story.
+
+We wanna store prompt templates, whenever a user is created with copy all prompts and assign as user's initial prompts
