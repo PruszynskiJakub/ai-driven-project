@@ -18,6 +18,6 @@ app.route('/api/stories', stories)
 app.route('/api/artifacts', artifacts)
 
 export default {
-  port: 3002,
+  port: 3001,
   fetch: app.fetch,
 }
