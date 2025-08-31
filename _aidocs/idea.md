@@ -3,6 +3,9 @@
 ## Core Vision
 An AI-powered creative workspace that transforms raw ideas into polished social media content through collaborative iteration between human creativity and AI assistance.
 
+## Audience
+Experts and professional struggling with social media
+
 ## Key Terms & Structure
 - **Spark**: User captures their initial idea 
 - **Story**: User elaborates with personal backstory
