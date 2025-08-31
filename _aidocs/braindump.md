@@ -18,6 +18,7 @@ As a user I want to select the AI model for image generation
 As a user I want to select the AI model for video generation
 As a user I want to archive spark
 As a system I wanna make sure that new version is different from the previous
+As a system I wanna track AI usage with langfuse
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
