@@ -20,6 +20,9 @@ As a user I want to archive spark
 As a system I wanna make sure that new version is different from the previous
 As a system I wanna track AI usage with langfuse
 As a user I want to customize artifact prompts
+
+As a user I want to be able to create my moodboard
+
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
@@ -29,3 +32,4 @@ What are the reasons behind story modification
 > Articles and youtube are just someone else story.
 
 We wanna store prompt templates, whenever a user is created with copy all prompts and assign as user's initial prompts
+
