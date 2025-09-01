@@ -12,6 +12,8 @@ import type {
   GenerationType
 } from '../models/artifact';
 import { v4 as uuidv4 } from 'uuid';
+import { generateArtifactContent } from './aiService';
+import { getStoryById } from './storyService';
 
 export async function createArtifact(data: CreateArtifactRequest): Promise<ArtifactWithVersionResponse> {
   const artifactId = uuidv4();
@@ -30,13 +32,27 @@ export async function createArtifact(data: CreateArtifactRequest): Promise<Artif
     sourceArtifactId: null,
   };
 
-  // TODO: Integrate with AI service to generate initial content
-  // For now, create empty initial version
+  // Get story content for AI generation context
+  const story = await getStoryById(data.storyId);
+  if (!story) {
+    throw new Error('Story not found');
+  }
+
+  // Generate initial content using AI service
+  let initialContent = '';
+  try {
+    initialContent = await generateArtifactContent(story.content, data.type);
+  } catch (error) {
+    console.error('AI content generation failed:', error);
+    // Fall back to empty content if AI generation fails
+    initialContent = '';
+  }
+
   const initialVersionData = {
     id: versionId,
     artifactId,
     version: 1,
-    content: '', // Will be filled by AI generation
+    content: initialContent,
     userFeedback: null,
     createdAt: now,
     generationType: 'ai_generated' as GenerationType,
@@ -143,13 +159,27 @@ export async function addFeedbackAndIterate(artifactId: string, data: AddFeedbac
   const newVersion = artifact.currentVersion + 1;
   const now = new Date().toISOString();
   
-  // TODO: Integrate with AI service to generate new content based on feedback
-  // For now, create placeholder version
+  // Get story content for AI generation context
+  const story = await getStoryById(artifact.storyId);
+  if (!story) {
+    throw new Error('Story not found');
+  }
+
+  // Generate new content based on feedback using AI service
+  let newContent = '';
+  try {
+    newContent = await generateArtifactContent(story.content, artifact.type as string, data.feedback);
+  } catch (error) {
+    console.error('AI content generation failed:', error);
+    // Fall back to placeholder content if AI generation fails
+    newContent = `[AI Generated content based on feedback: "${data.feedback}"]`;
+  }
+
   const newVersionData = {
     id: uuidv4(),
     artifactId,
     version: newVersion,
-    content: `[AI Generated content based on feedback: "${data.feedback}"]`, // Placeholder
+    content: newContent,
     userFeedback: data.feedback,
     createdAt: now,
     generationType: 'ai_generated' as GenerationType,
