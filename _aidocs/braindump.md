@@ -35,6 +35,18 @@ As a user I want to get tips how to write better content
 
 As a system I want to support user in defining strategy
 
+As a system I wanna sanitize strategy, feedbacks etc.
+
+As a user I wanna see graph view.
+
+As a user I wanna see similar sparks on graph grouped together.
+
+As a user I wanna remove sparks with all stuff.
+
+As a user I wanna remove draft artifact.
+
+As a user I wanna archive final artifact.
+
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
