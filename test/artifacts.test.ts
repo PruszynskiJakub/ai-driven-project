@@ -919,4 +919,265 @@ describe('Artifacts API', () => {
       expect(versions.map(v => v.version).sort()).toEqual([1, 3, 4]);
     });
   });
+
+  describe('POST /api/artifacts/:id/versions/:version/restore', () => {
+    test('should restore previous version without creating duplicate', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 3 });
+      
+      // Create versions 1, 2, 3
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      // Count versions before restore
+      const versionsBeforeRestore = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versionsBeforeRestore).toHaveLength(3);
+
+      // Restore to version 2
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/2/restore`, {
+        method: 'POST'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 2,
+        currentVersionContent: 'Version 2 content'
+      });
+      expect(result.message).toBe('Version restored successfully');
+
+      // Verify no new version was created - should still have only 3 versions
+      const versionsAfterRestore = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versionsAfterRestore).toHaveLength(3);
+      expect(versionsAfterRestore.map(v => v.version).sort()).toEqual([1, 2, 3]);
+
+      // Verify artifact current version was updated
+      const updatedArtifact = await getArtifactFromDb(artifact.id);
+      expect(updatedArtifact.currentVersion).toBe(2);
+    });
+
+    test('should handle restore to current version gracefully', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 2 });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+
+      // Try to restore to current version (2)
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/2/restore`, {
+        method: 'POST'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 2,
+        currentVersionContent: 'Version 2 content'
+      });
+    });
+
+    test('should reject restore on finalized artifact', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ 
+        storyId: story.id, 
+        state: 'final',
+        currentVersion: 2 
+      });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/1/restore`, {
+        method: 'POST'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to restore version');
+      expect(result.details).toContain('finalized');
+    });
+
+    test('should reject restore to non-existent version', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 1 });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/999/restore`, {
+        method: 'POST'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to restore version');
+      expect(result.details).toContain('Target version not found');
+    });
+
+    test('should return 404 for non-existent artifact', async () => {
+      const response = await testApp.request('/api/artifacts/non-existent-id/versions/1/restore', {
+        method: 'POST'
+      });
+
+      expect(response.status).toBe(404);
+      const result = await response.json();
+      expect(result.error).toBe('Artifact not found');
+    });
+
+    test('should return 400 for invalid version number', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id });
+
+      const invalidVersions = ['invalid', '0', '-1'];
+
+      for (const version of invalidVersions) {
+        const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/${version}/restore`, {
+          method: 'POST'
+        });
+
+        expect(response.status).toBe(400);
+        const result = await response.json();
+        expect(result.error).toBe('Invalid version number');
+      }
+    });
+
+    test('should correctly handle version numbering after restore operations', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 3 });
+      
+      // Create versions 1, 2, 3
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      // Restore to version 1
+      await testApp.request(`/api/artifacts/${artifact.id}/versions/1/restore`, {
+        method: 'POST'
+      });
+
+      // Now add feedback to create a new version - should be version 4, not 2
+      const feedbackData = createValidFeedbackData({ 
+        feedback: 'Make it better' // This should trigger new version creation in test mode
+      });
+      
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/iterate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData),
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data.currentVersion).toBe(4); // Should be 4, not 2
+      expect(result.data.newVersionCreated).toBe(true);
+
+      // Verify we have versions 1, 2, 3, 4 in database
+      const allVersions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(allVersions).toHaveLength(4);
+      expect(allVersions.map(v => v.version).sort()).toEqual([1, 2, 3, 4]);
+    });
+
+    test('should correctly handle version numbering after restore when updating content', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 3 });
+      
+      // Create versions 1, 2, 3
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      // Restore to version 1
+      await testApp.request(`/api/artifacts/${artifact.id}/versions/1/restore`, {
+        method: 'POST'
+      });
+
+      // Now update content to create a new version - should be version 4, not 2
+      const contentData = createValidArtifactContentData({ 
+        content: 'New updated content'
+      });
+      
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contentData),
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data.currentVersion).toBe(4); // Should be 4, not 2
+      expect(result.data.newVersionCreated).toBe(true);
+
+      // Verify we have versions 1, 2, 3, 4 in database
+      const allVersions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(allVersions).toHaveLength(4);
+      expect(allVersions.map(v => v.version).sort()).toEqual([1, 2, 3, 4]);
+    });
+  });
 });

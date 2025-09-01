@@ -10,7 +10,8 @@ import {
   finalizeArtifact,
   duplicateArtifact,
   getArtifactsByStoryId,
-  removeArtifactVersion
+  removeArtifactVersion,
+  restoreVersion
 } from '../services/artifactService';
 import {
   CreateArtifactSchema,
@@ -117,6 +118,41 @@ artifacts.get('/:id/versions/:version', async (c) => {
       error: 'Failed to retrieve artifact version',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, 500);
+  }
+});
+
+// POST /artifacts/:id/versions/:version/restore - Restore specific version without creating duplicate (Draft only)
+artifacts.post('/:id/versions/:version/restore', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const version = parseInt(c.req.param('version'), 10);
+    
+    if (isNaN(version) || version < 1) {
+      return c.json({ error: 'Invalid version number' }, 400);
+    }
+    
+    const artifact = await restoreVersion(id, version);
+    
+    if (!artifact) {
+      return c.json({ error: 'Artifact not found' }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: artifact,
+      message: 'Version restored successfully'
+    });
+  } catch (error) {
+    console.error('Error restoring artifact version:', error);
+    const statusCode = error instanceof Error && 
+      (error.message.includes('finalized') || 
+       error.message.includes('Target version not found')) 
+      ? 400 : 500;
+      
+    return c.json({ 
+      error: 'Failed to restore version',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, statusCode);
   }
 });
 

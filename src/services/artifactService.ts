@@ -237,7 +237,14 @@ export async function addFeedbackAndIterate(artifactId: string, data: AddFeedbac
   }
 
   // Content is different, create new version
-  const newVersion = artifact.currentVersion + 1;
+  // Get the maximum version number from existing versions to avoid collisions after restore
+  const existingVersions = await db
+    .select()
+    .from(artifactVersions)
+    .where(eq(artifactVersions.artifactId, artifactId));
+  
+  const maxVersion = Math.max(...existingVersions.map(v => v.version));
+  const newVersion = maxVersion + 1;
   const newVersionData = {
     id: uuidv4(),
     artifactId,
@@ -321,7 +328,14 @@ export async function updateArtifactContent(artifactId: string, data: UpdateArti
   }
 
   // Content is different, create new version
-  const newVersion = artifact.currentVersion + 1;
+  // Get the maximum version number from existing versions to avoid collisions after restore
+  const existingVersions = await db
+    .select()
+    .from(artifactVersions)
+    .where(eq(artifactVersions.artifactId, artifactId));
+  
+  const maxVersion = Math.max(...existingVersions.map(v => v.version));
+  const newVersion = maxVersion + 1;
   const newVersionData = {
     id: uuidv4(),
     artifactId,
@@ -471,6 +485,71 @@ export async function duplicateArtifact(sourceArtifactId: string): Promise<Artif
     currentVersionContent: newVersionData.content,
     currentVersionFeedback: newVersionData.userFeedback,
     currentVersionGenerationType: newVersionData.generationType,
+  };
+}
+
+export async function restoreVersion(artifactId: string, targetVersion: number): Promise<ArtifactWithVersionResponse | null> {
+  const [artifact] = await db.select().from(artifacts).where(eq(artifacts.id, artifactId));
+  
+  if (!artifact) return null;
+  if (artifact.state !== 'draft') {
+    throw new Error('Cannot restore versions in finalized artifact');
+  }
+
+  // Get the target version content
+  const [targetVersionData] = await db
+    .select()
+    .from(artifactVersions)
+    .where(and(
+      eq(artifactVersions.artifactId, artifactId),
+      eq(artifactVersions.version, targetVersion)
+    ));
+
+  if (!targetVersionData) {
+    throw new Error('Target version not found');
+  }
+
+  // If we're already at this version, no action needed
+  if (artifact.currentVersion === targetVersion) {
+    return {
+      id: artifact.id,
+      storyId: artifact.storyId,
+      type: artifact.type as any,
+      state: artifact.state as ArtifactState,
+      currentVersion: artifact.currentVersion,
+      createdAt: artifact.createdAt,
+      updatedAt: artifact.updatedAt,
+      finalizedAt: artifact.finalizedAt,
+      sourceArtifactId: artifact.sourceArtifactId,
+      currentVersionContent: targetVersionData.content,
+      currentVersionFeedback: targetVersionData.userFeedback,
+      currentVersionGenerationType: targetVersionData.generationType as GenerationType,
+    };
+  }
+
+  const now = new Date().toISOString();
+
+  // Simply update the current version pointer to the target version
+  await db.update(artifacts)
+    .set({ 
+      currentVersion: targetVersion,
+      updatedAt: now 
+    })
+    .where(eq(artifacts.id, artifactId));
+
+  return {
+    id: artifact.id,
+    storyId: artifact.storyId,
+    type: artifact.type as any,
+    state: artifact.state as ArtifactState,
+    currentVersion: targetVersion,
+    createdAt: artifact.createdAt,
+    updatedAt: now,
+    finalizedAt: artifact.finalizedAt,
+    sourceArtifactId: artifact.sourceArtifactId,
+    currentVersionContent: targetVersionData.content,
+    currentVersionFeedback: targetVersionData.userFeedback,
+    currentVersionGenerationType: targetVersionData.generationType as GenerationType,
   };
 }
 
