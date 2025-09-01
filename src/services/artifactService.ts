@@ -5,7 +5,7 @@ import type {
   CreateArtifactRequest, 
   UpdateArtifactContentRequest,
   AddFeedbackRequest,
-  ArtifactResponse, 
+  ArtifactListResponse,
   ArtifactVersionResponse,
   ArtifactWithVersionResponse,
   ArtifactState,
@@ -553,10 +553,25 @@ export async function restoreVersion(artifactId: string, targetVersion: number):
   };
 }
 
-export async function getArtifactsByStoryId(storyId: string): Promise<ArtifactResponse[]> {
+export async function getArtifactsByStoryId(storyId: string): Promise<ArtifactListResponse[]> {
   const artifactsList = await db
-    .select()
+    .select({
+      id: artifacts.id,
+      storyId: artifacts.storyId,
+      type: artifacts.type,
+      state: artifacts.state,
+      currentVersion: artifacts.currentVersion,
+      createdAt: artifacts.createdAt,
+      updatedAt: artifacts.updatedAt,
+      finalizedAt: artifacts.finalizedAt,
+      sourceArtifactId: artifacts.sourceArtifactId,
+      content: artifactVersions.content,
+    })
     .from(artifacts)
+    .innerJoin(artifactVersions, and(
+      eq(artifactVersions.artifactId, artifacts.id),
+      eq(artifactVersions.version, artifacts.currentVersion)
+    ))
     .where(eq(artifacts.storyId, storyId))
     .orderBy(desc(artifacts.createdAt));
 
@@ -570,6 +585,9 @@ export async function getArtifactsByStoryId(storyId: string): Promise<ArtifactRe
     updatedAt: artifact.updatedAt,
     finalizedAt: artifact.finalizedAt,
     sourceArtifactId: artifact.sourceArtifactId,
+    contentSnippet: artifact.type.toLowerCase().includes('image') 
+      ? '' 
+      : artifact.content.substring(0, 150),
   }));
 }
 

@@ -621,11 +621,22 @@ describe('Artifacts API', () => {
         type: 'linkedin_post',
         state: 'draft'
       });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact1.id,
+        version: 1,
+        content: 'LinkedIn post content for testing contentSnippet'
+      });
+      
       const artifact2 = await createTestArtifactInDb({ 
         storyId: story.id,
         type: 'blog_article',
         state: 'final',
         finalizedAt: new Date().toISOString()
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact2.id,
+        version: 1,
+        content: 'Blog article content that should also be included in the list'
       });
 
       const response = await testApp.request(`/api/stories/${story.id}/artifacts`);
@@ -654,6 +665,10 @@ describe('Artifacts API', () => {
         state: 'final'
       });
       expect(finalArtifact.finalizedAt).toBeTruthy();
+      
+      // Check contentSnippet is included
+      expect(draftArtifact.contentSnippet).toBe('LinkedIn post content for testing contentSnippet');
+      expect(finalArtifact.contentSnippet).toBe('Blog article content that should also be included in the list');
     });
 
     test('should return empty array for story with no artifacts', async () => {
@@ -666,6 +681,32 @@ describe('Artifacts API', () => {
       const result = await response.json();
       expect(result.success).toBe(true);
       expect(result.data).toEqual([]);
+    });
+    
+    test('should return empty contentSnippet for image artifacts', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      
+      const imageArtifact = await createTestArtifactInDb({ 
+        storyId: story.id,
+        type: 'image',
+        state: 'draft'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: imageArtifact.id,
+        version: 1,
+        content: 'https://example.com/image.jpg'
+      });
+
+      const response = await testApp.request(`/api/stories/${story.id}/artifacts`);
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toHaveLength(1);
+      
+      expect(result.data[0].contentSnippet).toBe('');
+      expect(result.data[0].type).toBe('image');
     });
   });
 
