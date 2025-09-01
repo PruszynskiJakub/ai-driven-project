@@ -26,6 +26,8 @@ As a user I want to be able to create my moodboard
 As a user I want to integrate Canva brand
 As a user I want to set my default AI model per artifact type
 
+As a system I want to support streaming
+
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
