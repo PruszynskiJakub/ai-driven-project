@@ -25,6 +25,7 @@ As a user I want to be able to create my moodboard
 
 As a user I want to integrate Canva brand
 As a user I want to set my default AI model per artifact type
+As a user I want to be able to control temperature
 
 As a system I want to support streaming
 
