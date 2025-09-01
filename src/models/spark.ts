@@ -16,6 +16,10 @@ export const SparkResponseSchema = z.object({
   initialThoughts: z.string().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
+  artifactCounts: z.object({
+    draft: z.number(),
+    final: z.number(),
+  }),
 });
 
 export type CreateSparkRequest = z.infer<typeof CreateSparkSchema>;
