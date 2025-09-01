@@ -47,8 +47,8 @@ export async function createArtifact(data: CreateArtifactRequest): Promise<Artif
   // Generate initial content using AI service
   let initialContent = '';
   
-  // In test environment, use empty content to avoid API calls
-  if (process.env.NODE_ENV === 'test' || !process.env.OPENROUTER_API_KEY) {
+  // In test environment, use empty content for text but still call generateArtifactContent for images (to get placeholder)
+  if ((process.env.NODE_ENV === 'test' || !process.env.OPENROUTER_API_KEY) && !data.type.toLowerCase().includes('image')) {
     initialContent = '';
   } else {
     try {

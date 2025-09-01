@@ -2,10 +2,7 @@ import { z } from 'zod';
 
 const ARTIFACT_TYPES = [
   'linkedin_post',
-  'blog_article', 
-  'twitter_thread',
-  'email_newsletter',
-  'social_media_post'
+  'image'
 ] as const;
 
 const ARTIFACT_STATES = ['draft', 'final'] as const;
@@ -62,6 +59,5 @@ export type AddFeedbackRequest = z.infer<typeof AddFeedbackSchema>;
 export type ArtifactResponse = z.infer<typeof ArtifactResponseSchema>;
 export type ArtifactVersionResponse = z.infer<typeof ArtifactVersionResponseSchema>;
 export type ArtifactWithVersionResponse = z.infer<typeof ArtifactWithVersionResponseSchema>;
-export type ArtifactType = typeof ARTIFACT_TYPES[number];
 export type ArtifactState = typeof ARTIFACT_STATES[number];
 export type GenerationType = typeof GENERATION_TYPES[number];
