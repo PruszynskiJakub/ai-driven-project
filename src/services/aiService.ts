@@ -104,19 +104,3 @@ export async function generateArtifactContent(
   const response = await generateContent({ messages });
   return response.content;
 }
-
-export async function generateStoryFromSpark(sparkContent: string): Promise<string> {
-  const messages: AIMessage[] = [
-    {
-      role: 'system',
-      content: 'You are a creative writing assistant. Transform the provided spark into a detailed, engaging story with rich context, character development, and narrative depth.'
-    },
-    {
-      role: 'user',
-      content: `Spark: ${sparkContent}\n\nPlease develop this spark into a comprehensive story with backstory, motivation, and detailed context.`
-    }
-  ];
-
-  const response = await generateContent({ messages });
-  return response.content;
-}
