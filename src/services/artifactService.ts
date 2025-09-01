@@ -573,6 +573,21 @@ export async function getArtifactsByStoryId(storyId: string): Promise<ArtifactRe
   }));
 }
 
+export async function deleteArtifact(artifactId: string): Promise<boolean> {
+  const [artifact] = await db.select().from(artifacts).where(eq(artifacts.id, artifactId));
+  
+  if (!artifact) return false;
+  if (artifact.state !== 'draft') {
+    throw new Error('Cannot delete finalized artifact');
+  }
+
+  // Delete the artifact - this will cascade delete all artifact versions
+  // due to the foreign key constraint with onDelete: 'cascade'
+  await db.delete(artifacts).where(eq(artifacts.id, artifactId));
+  
+  return true;
+}
+
 export async function removeArtifactVersion(artifactId: string, version: number): Promise<ArtifactWithVersionResponse | null> {
   // Validate artifact exists and is in draft state
   const [artifact] = await db.select().from(artifacts).where(eq(artifacts.id, artifactId));

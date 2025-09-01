@@ -61,3 +61,8 @@ export async function listSparks(userId: string = 'default_user'): Promise<Spark
         updatedAt: spark.updatedAt,
     }));
 }
+
+export async function deleteSpark(id: string): Promise<boolean> {
+    const result = await db.delete(sparks).where(eq(sparks.id, id));
+    return result.changes > 0;
+}

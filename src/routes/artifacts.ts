@@ -11,7 +11,8 @@ import {
   duplicateArtifact,
   getArtifactsByStoryId,
   removeArtifactVersion,
-  restoreVersion
+  restoreVersion,
+  deleteArtifact
 } from '../services/artifactService';
 import {
   CreateArtifactSchema,
@@ -317,6 +318,31 @@ artifacts.post('/:id/duplicate', async (c) => {
     
     return c.json({ 
       error: 'Failed to duplicate artifact',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, statusCode);
+  }
+});
+
+// DELETE /artifacts/:id - Delete entire draft artifact (cascades to all versions)
+artifacts.delete('/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const deleted = await deleteArtifact(id);
+    
+    if (!deleted) {
+      return c.json({ error: 'Artifact not found' }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Artifact and all versions deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting artifact:', error);
+    const statusCode = error instanceof Error && error.message.includes('finalized') ? 400 : 500;
+    
+    return c.json({ 
+      error: 'Failed to delete artifact',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, statusCode);
   }

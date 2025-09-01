@@ -1180,4 +1180,122 @@ describe('Artifacts API', () => {
       expect(allVersions.map(v => v.version).sort()).toEqual([1, 2, 3, 4]);
     });
   });
+
+  describe('DELETE /api/artifacts/:id', () => {
+    test('should delete draft artifact and cascade delete all versions', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ 
+        storyId: story.id, 
+        state: 'draft',
+        currentVersion: 3 
+      });
+      
+      // Create multiple versions
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      // Verify artifacts and versions exist before deletion
+      const artifactCountBefore = await countArtifactsInDb();
+      const versionCountBefore = await countArtifactVersionsInDb();
+      expect(artifactCountBefore).toBeGreaterThan(0);
+      expect(versionCountBefore).toBe(3);
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Artifact and all versions deleted successfully');
+
+      // Verify artifact and all versions were deleted
+      const artifactCountAfter = await countArtifactsInDb();
+      const versionCountAfter = await countArtifactVersionsInDb();
+      expect(artifactCountAfter).toBe(artifactCountBefore - 1);
+      expect(versionCountAfter).toBe(0);
+
+      // Verify the artifact is no longer accessible
+      const getResponse = await testApp.request(`/api/artifacts/${artifact.id}`);
+      expect(getResponse.status).toBe(404);
+    });
+
+    test('should reject deletion of finalized artifact', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ 
+        storyId: story.id, 
+        state: 'final',
+        currentVersion: 1 
+      });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Final version content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to delete artifact');
+      expect(result.details).toContain('finalized');
+
+      // Verify artifact was not deleted
+      const getResponse = await testApp.request(`/api/artifacts/${artifact.id}`);
+      expect(getResponse.status).toBe(200);
+    });
+
+    test('should return 404 for non-existent artifact', async () => {
+      const response = await testApp.request('/api/artifacts/non-existent-id', {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(404);
+      const result = await response.json();
+      expect(result.error).toBe('Artifact not found');
+    });
+
+    test('should handle deletion of artifact with no versions gracefully', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ 
+        storyId: story.id, 
+        state: 'draft',
+        currentVersion: 1 
+      });
+      
+      // Don't create any versions - this is an edge case
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.message).toBe('Artifact and all versions deleted successfully');
+
+      // Verify the artifact is no longer accessible
+      const getResponse = await testApp.request(`/api/artifacts/${artifact.id}`);
+      expect(getResponse.status).toBe(404);
+    });
+  });
 });

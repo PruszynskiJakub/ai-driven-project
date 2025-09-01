@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
-import { getSparkById, listSparks, createSpark } from '../services/sparkService';
+import { getSparkById, listSparks, createSpark, deleteSpark } from '../services/sparkService';
 import { CreateSparkSchema } from '../models/spark';
 import { getStoryBySparkId } from '../services/storyService';
 
@@ -99,6 +99,31 @@ sparks.get('/:sparkId/story', async (c) => {
     console.error('Error getting story:', error);
     return c.json({ 
       error: 'Failed to get story',
+      message: 'An unexpected error occurred. Please try again.'
+    }, 500);
+  }
+});
+
+sparks.delete('/:id', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const deleted = await deleteSpark(id);
+    
+    if (!deleted) {
+      return c.json({
+        error: 'Spark not found',
+        message: 'The requested spark does not exist.'
+      }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Spark and all related data deleted successfully'
+    });
+  } catch (error) {
+    console.error('Error deleting spark:', error);
+    return c.json({ 
+      error: 'Failed to delete spark',
       message: 'An unexpected error occurred. Please try again.'
     }, 500);
   }
