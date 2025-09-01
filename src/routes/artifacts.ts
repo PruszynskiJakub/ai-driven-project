@@ -9,7 +9,8 @@ import {
   updateArtifactContent,
   finalizeArtifact,
   duplicateArtifact,
-  getArtifactsByStoryId
+  getArtifactsByStoryId,
+  removeArtifactVersion
 } from '../services/artifactService';
 import {
   CreateArtifactSchema,
@@ -119,6 +120,42 @@ artifacts.get('/:id/versions/:version', async (c) => {
   }
 });
 
+// DELETE /artifacts/:id/versions/:version - Remove specific version (Draft only)
+artifacts.delete('/:id/versions/:version', async (c) => {
+  try {
+    const id = c.req.param('id');
+    const version = parseInt(c.req.param('version'), 10);
+    
+    if (isNaN(version) || version < 1) {
+      return c.json({ error: 'Invalid version number' }, 400);
+    }
+    
+    const artifact = await removeArtifactVersion(id, version);
+    
+    if (!artifact) {
+      return c.json({ error: 'Artifact not found' }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: artifact,
+      message: 'Version removed successfully'
+    });
+  } catch (error) {
+    console.error('Error removing artifact version:', error);
+    const statusCode = error instanceof Error && 
+      (error.message.includes('finalized') || 
+       error.message.includes('last remaining') ||
+       error.message.includes('Version not found')) 
+      ? 400 : 500;
+      
+    return c.json({ 
+      error: 'Failed to remove version',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, statusCode);
+  }
+});
+
 // POST /artifacts/:id/iterate - Add feedback and generate new version (Draft only)
 artifacts.post('/:id/iterate',
   validator('json', (value, c) => {
@@ -138,10 +175,14 @@ artifacts.post('/:id/iterate',
         return c.json({ error: 'Artifact not found' }, 404);
       }
       
+      const message = artifact.newVersionCreated 
+        ? 'New version created with feedback'
+        : 'Content unchanged - no new version created';
+      
       return c.json({
         success: true,
         data: artifact,
-        message: 'New version created with feedback'
+        message
       });
     } catch (error) {
       console.error('Error adding feedback:', error);
@@ -172,10 +213,14 @@ artifacts.put('/:id/content',
         return c.json({ error: 'Artifact not found' }, 404);
       }
       
+      const message = artifact.newVersionCreated 
+        ? 'Content updated successfully'
+        : 'Content unchanged - no new version created';
+      
       return c.json({
         success: true,
         data: artifact,
-        message: 'Content updated successfully'
+        message
       });
     } catch (error) {
       console.error('Error updating content:', error);

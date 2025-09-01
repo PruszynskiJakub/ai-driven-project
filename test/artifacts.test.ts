@@ -316,6 +316,42 @@ describe('Artifacts API', () => {
         expect(result.error).toBe('Invalid input');
       }
     });
+
+    test('should not create new version when AI generates identical content', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 1 });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Existing content that AI will regenerate identically'
+      });
+      
+      // Mock AI service to return the same content (this would need to be implemented in real scenario)
+      const feedbackData = createValidFeedbackData({ feedback: 'Please review this content' });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/iterate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(feedbackData),
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 1, // Should remain version 1
+        currentVersionFeedback: null // Should keep original feedback, not new one
+      });
+      expect(result.message).toBe('Content unchanged - no new version created');
+
+      // Verify database state - should still have only 1 version
+      const artifactInDb = await getArtifactFromDb(artifact.id);
+      expect(artifactInDb?.currentVersion).toBe(1);
+
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(1); // Should not create new version
+    });
   });
 
   describe('PUT /api/artifacts/:id/content', () => {
@@ -402,6 +438,46 @@ describe('Artifacts API', () => {
         const result = await response.json();
         expect(result.error).toBe('Invalid input');
       }
+    });
+
+    test('should not create new version when content is identical', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 1 });
+      const existingContent = 'Existing content in the artifact';
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: existingContent
+      });
+      
+      // Try to update with identical content (with whitespace variations)
+      const contentData = createValidArtifactContentData({ content: '  Existing content in the artifact  \n' });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/content`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contentData),
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 1, // Should remain version 1
+        currentVersionContent: existingContent, // Should keep original content
+        currentVersionGenerationType: 'ai_generated' // Should keep original generation type
+      });
+      expect(result.message).toBe('Content unchanged - no new version created');
+
+      // Verify database state - should still have only 1 version
+      const artifactInDb = await getArtifactFromDb(artifact.id);
+      expect(artifactInDb?.currentVersion).toBe(1);
+      expect(artifactInDb?.updatedAt).toBeTruthy(); // Should have updated timestamp
+
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(1); // Should not create new version
+      expect(versions[0].content).toBe(existingContent); // Content should be unchanged
     });
   });
 
@@ -590,6 +666,257 @@ describe('Artifacts API', () => {
       const result = await response.json();
       expect(result.success).toBe(true);
       expect(result.data).toEqual([]);
+    });
+  });
+
+  describe('DELETE /api/artifacts/:id/versions/:version', () => {
+    test('should remove specific version from draft artifact', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 3 });
+      
+      // Create multiple versions
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/2`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 3, // Should remain 3 since we removed version 2
+        currentVersionContent: 'Version 3 content'
+      });
+
+      // Verify database state - version 2 should be removed
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(2);
+      expect(versions.map(v => v.version)).toEqual([1, 3]); // Version 2 should be gone
+    });
+
+    test('should remove current version and update currentVersion pointer', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 3 });
+      
+      // Create multiple versions
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+
+      // Remove the current version (version 3)
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/3`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 2, // Should update to highest remaining version
+        currentVersionContent: 'Version 2 content'
+      });
+
+      // Verify database state
+      const artifactInDb = await getArtifactFromDb(artifact.id);
+      expect(artifactInDb?.currentVersion).toBe(2);
+
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(2);
+      expect(versions.map(v => v.version)).toEqual([1, 2]); // Version 3 should be gone
+    });
+
+    test('should reject removal from finalized artifact', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ 
+        storyId: story.id, 
+        state: 'final',
+        finalizedAt: new Date().toISOString(),
+        currentVersion: 2
+      });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/1`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to remove version');
+      expect(result.details).toContain('finalized');
+
+      // Verify no versions were removed
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(2);
+    });
+
+    test('should reject removal of last remaining version', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 1 });
+      
+      // Create only one version
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Only version content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/1`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to remove version');
+      expect(result.details).toContain('last remaining');
+
+      // Verify version was not removed
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(1);
+    });
+
+    test('should reject removal of non-existent version', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 2 });
+      
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/999`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(400);
+      const result = await response.json();
+      expect(result.error).toBe('Failed to remove version');
+      expect(result.details).toContain('Version not found');
+
+      // Verify no versions were removed
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(2);
+    });
+
+    test('should return 404 for non-existent artifact', async () => {
+      const response = await testApp.request('/api/artifacts/non-existent-id/versions/1', {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(404);
+      const result = await response.json();
+      expect(result.error).toBe('Artifact not found');
+    });
+
+    test('should return 400 for invalid version number', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id });
+
+      const invalidVersions = ['invalid', '0', '-1'];
+
+      for (const version of invalidVersions) {
+        const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/${version}`, {
+          method: 'DELETE'
+        });
+
+        expect(response.status).toBe(400);
+        const result = await response.json();
+        expect(result.error).toBe('Invalid version number');
+      }
+    });
+
+    test('should handle version gaps correctly after removal', async () => {
+      const spark = await createTestSparkInDb();
+      const story = await createTestStoryInDb({ sparkId: spark.id });
+      const artifact = await createTestArtifactInDb({ storyId: story.id, currentVersion: 4 });
+      
+      // Create versions 1, 2, 3, 4
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 1,
+        content: 'Version 1 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 2,
+        content: 'Version 2 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 3,
+        content: 'Version 3 content'
+      });
+      await createTestArtifactVersionInDb({ 
+        artifactId: artifact.id, 
+        version: 4,
+        content: 'Version 4 content'
+      });
+
+      // Remove version 2 (creates gap: 1, 3, 4)
+      const response = await testApp.request(`/api/artifacts/${artifact.id}/versions/2`, {
+        method: 'DELETE'
+      });
+
+      expect(response.status).toBe(200);
+      const result = await response.json();
+      expect(result.success).toBe(true);
+      expect(result.data).toMatchObject({
+        currentVersion: 4, // Should remain 4
+        currentVersionContent: 'Version 4 content'
+      });
+
+      // Verify database state - should have versions 1, 3, 4 (gap at 2)
+      const versions = await getArtifactVersionsByArtifactIdFromDb(artifact.id);
+      expect(versions).toHaveLength(3);
+      expect(versions.map(v => v.version).sort()).toEqual([1, 3, 4]);
     });
   });
 });
