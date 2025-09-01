@@ -33,6 +33,8 @@ As a system I want to support streaming
 
 As a user I want to get tips how to write better content
 
+As a system I want to support user in defining strategy
+
 ----
 As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
 
