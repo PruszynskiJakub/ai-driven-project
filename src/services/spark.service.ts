@@ -1,9 +1,10 @@
 import type {CreateSparkRequest, SparkResponse} from "../models/spark.ts";
 import {db} from "../db/database.ts";
 import {artifacts, sparks, stories} from "../db/schema";
-import {count, eq} from "drizzle-orm";
+import {count, desc, eq} from "drizzle-orm";
 import {v4 as uuidv4} from "uuid";
 import {storyService} from "./story.service.ts";
+import {isoNow} from "../utils/datetime.ts";
 
 async function getArtifactCounts(id: string): Promise<{ draft: number; final: number }> {
     const counts = await db

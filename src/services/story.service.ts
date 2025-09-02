@@ -3,6 +3,7 @@ import {db} from "../db/database.ts";
 import {stories} from "../db/schema";
 import {eq} from "drizzle-orm";
 import {v4 as uuidv4} from "uuid";
+import {isoNow} from "../utils/datetime.ts";
 
 export const storyService = {
     getById: async (id: string): Promise<StoryResponse | null> => {
