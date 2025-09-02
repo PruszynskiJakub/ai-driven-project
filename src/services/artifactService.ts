@@ -13,8 +13,11 @@ import type {
     UpdateArtifactContentRequest
 } from '../models/artifact';
 import {v4 as uuidv4} from 'uuid';
-import {aiService} from "./ai.service.ts";
+import {type AIMessage, aiService} from "./ai.service.ts";
 import {storyService} from "./story.service.ts";
+import {prompt as createLinkedinPost} from "../prompts/linkedin-post.create.ts";
+import {isoNow} from "../utils/datetime.ts";
+import {areContentsEqual} from "../utils/text.ts";
 
 
 export async function createArtifact(data: CreateArtifactRequest): Promise<ArtifactWithVersionResponse> {
@@ -51,14 +54,15 @@ export async function createArtifact(data: CreateArtifactRequest): Promise<Artif
             const messages: AIMessage[] = [
                 {
                     role: 'system',
-                    content: `You are a content creation assistant. Generate high-quality ${artifactType} content based on the provided story context.${feedback ? ' Take into account the user feedback to improve the content.' : ''}`
+                    content: createLinkedinPost()
                 },
                 {
                     role: 'user',
                     content: `Story context: ${storyContent}${feedback ? `\n\nUser feedback: ${feedback}` : ''}\n\nPlease create engaging ${artifactType} content based on this story.`
                 }
             ];
-            initialContent = await aiService.completion({messages})
+            const completion = await aiService.completion({messages})
+            initialContent = completion.content
             break;
         default:
             // code block
@@ -213,7 +217,7 @@ export async function addFeedbackAndIterate(artifactId: string, data: AddFeedbac
         try {
             switch (artifact.type as ArtifactTypes) {
                 case "image":
-                    newContent = aiService.image(`${story.content}, ${data.feedback}`)
+                    newContent = await aiService.image(`${story.content}, ${data.feedback}`)
                     break
                 case "linkedin_post":
                     const messages: AIMessage[] = [
@@ -226,7 +230,8 @@ export async function addFeedbackAndIterate(artifactId: string, data: AddFeedbac
                             content: `Story context: ${storyContent}${feedback ? `\n\nUser feedback: ${feedback}` : ''}\n\nPlease create engaging ${artifactType} content based on this story.`
                         }
                     ];
-                    newContent = aiService.completion(messages)
+                    const completion = await aiService.completion({messages})
+                    newContent = completion.content
                     break
                 default:
                     throw Error("Unknown Artifact type");
