@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
-import { getSparkById, listSparks, createSpark, deleteSpark } from '../services/sparkService';
 import { CreateSparkSchema } from '../models/spark';
 import { getStoryBySparkId } from '../services/storyService';
+import {sparkService} from "../services/spark.service.ts";
 
 const sparks = new Hono();
 
@@ -17,7 +17,7 @@ sparks.post('/',
   async (c) => {
     try {
       const sparkData = c.req.valid('json');
-      const spark = await createSpark(sparkData);
+      const spark = await sparkService.create(sparkData);
       
       return c.json({
         success: true,
@@ -36,7 +36,7 @@ sparks.post('/',
 
 sparks.get('/', async (c) => {
   try {
-    const sparksList = await listSparks();
+    const sparksList = await sparkService.listAll();
     
     return c.json({
       success: true,
@@ -55,7 +55,7 @@ sparks.get('/', async (c) => {
 sparks.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const spark = await getSparkById(id);
+    const spark = await sparkService.getById(id);
     
     if (!spark) {
       return c.json({
@@ -107,7 +107,7 @@ sparks.get('/:sparkId/story', async (c) => {
 sparks.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const deleted = await deleteSpark(id);
+    const deleted = await sparkService.delete(id);
     
     if (!deleted) {
       return c.json({
