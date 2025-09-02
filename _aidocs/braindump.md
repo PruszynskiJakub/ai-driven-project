@@ -23,6 +23,8 @@ As a user I want to customize artifact prompts
 
 As a system I wanna support light and dark mode
 
+As a user I wanna add automatically first comment to my linkedin post.
+
 As a user I want to be able to create my moodboard
 
 As a user I want to integrate Canva brand
