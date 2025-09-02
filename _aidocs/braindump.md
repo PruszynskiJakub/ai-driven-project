@@ -51,11 +51,7 @@ As a user I wanna remove draft artifact.
 
 As a user I wanna archive final artifact.
 
-----
-As a user I want to generate multiple stories for one spark. - REJECTED because what we really want is to reuse story for multiple artifacts
-
-
-What are the reasons behind story modification
+As a system I wanna auto suggest possible publications based on the artifacts.
 
 > Articles and youtube are just someone else story.
 
