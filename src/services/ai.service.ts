@@ -1,3 +1,5 @@
+import Replicate from "replicate";
+
 export interface AIMessage {
     role: 'user' | 'assistant' | 'system';
     content: string;
@@ -25,6 +27,9 @@ export class AIServiceError extends Error {
         this.name = 'AIServiceError';
     }
 }
+
+const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const DEFAULT_MODEL = 'openai/gpt-4o';
 
 export const aiService = {
     completion: async (request: AIGenerationRequest): Promise<AIGenerationResponse> => {
