@@ -65,4 +65,5 @@ export type ArtifactListResponse = z.infer<typeof ArtifactListResponseSchema>;
 export type ArtifactVersionResponse = z.infer<typeof ArtifactVersionResponseSchema>;
 export type ArtifactWithVersionResponse = z.infer<typeof ArtifactWithVersionResponseSchema>;
 export type ArtifactState = typeof ARTIFACT_STATES[number];
+export type ArtifactTypes = typeof ARTIFACT_TYPES[number];
 export type GenerationType = typeof GENERATION_TYPES[number];
