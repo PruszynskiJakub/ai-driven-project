@@ -123,5 +123,8 @@ export const aiService = {
             }
             throw new AIServiceError(`Image generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
+    },
+    moderation: async (prompt: string): Promise<boolean> => {
+        return true
     }
 }
