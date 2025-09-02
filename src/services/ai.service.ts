@@ -82,7 +82,7 @@ export const aiService = {
             throw new AIServiceError(`AI service request failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
         }
     },
-    image: async (content: string): Promise<String> => {
+    image: async (prompt: string): Promise<String> => {
         const apiToken = process.env.REPLICATE_API_TOKEN;
         if (!apiToken) {
             throw new AIServiceError('REPLICATE_API_TOKEN environment variable is not set');
