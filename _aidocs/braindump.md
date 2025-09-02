@@ -5,7 +5,7 @@ User can display a calendar with planned publications.
 As a user I want to schedule a publication.
 As a user I want to publish my publication on social media.
 As a user I want to generate sparks from story.
-As a user I want to generate sparks from articles, videos etc.
+As a user I want to generate sparks from articles, videos etc. based on the strategy and similarity first manually then automatically from Todoist
 As a user I want to see similar sparks during after creation.
 As a user I want my spark to be intelligently refined with AI so the title and initial thoughts have more sense. Yet we keep original intact as a reference.
 As a user I want to generate tags to my spark based on initial thoughts or story
@@ -20,6 +20,8 @@ As a user I want to archive spark
 As a system I wanna make sure that new version is different from the previous
 As a system I wanna track AI usage with langfuse
 As a user I want to customize artifact prompts
+
+As a system I wanna support light and dark mode
 
 As a user I want to be able to create my moodboard
 
