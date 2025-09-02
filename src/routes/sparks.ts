@@ -1,8 +1,8 @@
-import { Hono } from 'hono';
-import { validator } from 'hono/validator';
-import { CreateSparkSchema } from '../models/spark';
-import { getStoryBySparkId } from '../services/storyService';
+import {Hono} from 'hono';
+import {validator} from 'hono/validator';
+import {CreateSparkSchema} from '../models/spark';
 import {sparkService} from "../services/spark.service.ts";
+import {storyService} from "../services/story.service.ts";
 
 const sparks = new Hono();
 
@@ -81,7 +81,7 @@ sparks.get('/:id', async (c) => {
 sparks.get('/:sparkId/story', async (c) => {
   try {
     const sparkId = c.req.param('sparkId');
-    const story = await getStoryBySparkId(sparkId);
+    const story = await storyService.getBySparkId(sparkId);
     
     if (!story) {
       return c.json({

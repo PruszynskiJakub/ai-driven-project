@@ -192,7 +192,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 export async function createSpark(data: CreateSparkRequest): Promise<SparkResponse> {
   const id = uuidv4();
-  const now = new Date().toISOString();
+  const now = isoNow()
   
   const sparkData = {
     id,

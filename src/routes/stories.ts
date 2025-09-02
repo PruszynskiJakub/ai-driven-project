@@ -1,9 +1,9 @@
-import { Hono } from 'hono';
-import { zValidator } from '@hono/zod-validator';
-import { getStoryById, getStoryBySparkId, updateStory, autoSaveStory } from '../services/storyService';
-import { getArtifactsByStoryId } from '../services/artifactService';
-import { UpdateStorySchema } from '../models/story';
-import { z } from 'zod';
+import {Hono} from 'hono';
+import {zValidator} from '@hono/zod-validator';
+import {getArtifactsByStoryId} from '../services/artifactService';
+import {UpdateStorySchema} from '../models/story';
+import {z} from 'zod';
+import {storyService} from "../services/story.service.ts";
 
 const stories = new Hono();
 
@@ -16,7 +16,7 @@ stories.get('/:storyId', async (c) => {
     }
 
     try {
-        const story = await getStoryById(storyId);
+        const story = await storyService.getById(storyId);
         
         if (!story) {
             return c.json({ error: 'Story not found' }, 404);
@@ -39,7 +39,7 @@ stories.put('/:storyId', zValidator('json', UpdateStorySchema), async (c) => {
     }
 
     try {
-        const updatedStory = await updateStory(storyId, data);
+        const updatedStory = await storyService.update(storyId, data);
         
         if (!updatedStory) {
             return c.json({ error: 'Story not found' }, 404);
@@ -55,14 +55,14 @@ stories.put('/:storyId', zValidator('json', UpdateStorySchema), async (c) => {
 // Auto-save Story
 stories.patch('/:storyId/autosave', zValidator('json', z.object({ content: z.string() })), async (c) => {
     const storyId = c.req.param('storyId');
-    const { content } = c.req.valid('json');
+    const content  = c.req.valid('json');
 
     if (!storyId) {
         return c.json({ error: 'Story ID is required' }, 400);
     }
 
     try {
-        const result = await autoSaveStory(storyId, content);
+        const result = await storyService.update(storyId, {content, isAutoSave: true});
         
         if (!result) {
             return c.json({ error: 'Story not found' }, 404);

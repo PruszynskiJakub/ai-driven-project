@@ -1,25 +1,26 @@
-import {eq, and, desc} from 'drizzle-orm';
+import {and, desc, eq} from 'drizzle-orm';
 import {db} from '../db/database';
 import {artifacts, artifactVersions} from '../db/schema/artifacts';
 import type {
-    CreateArtifactRequest,
-    UpdateArtifactContentRequest,
     AddFeedbackRequest,
     ArtifactListResponse,
+    ArtifactState,
+    ArtifactTypes,
     ArtifactVersionResponse,
     ArtifactWithVersionResponse,
-    ArtifactState,
-    GenerationType, ArtifactTypes
+    CreateArtifactRequest,
+    GenerationType,
+    UpdateArtifactContentRequest
 } from '../models/artifact';
 import {v4 as uuidv4} from 'uuid';
-import {getStoryById} from './storyService';
 import {aiService} from "./ai.service.ts";
+import {storyService} from "./story.service.ts";
 
 
 export async function createArtifact(data: CreateArtifactRequest): Promise<ArtifactWithVersionResponse> {
     const artifactId = uuidv4();
     const versionId = uuidv4();
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     const artifactData = {
         id: artifactId,
@@ -34,7 +35,7 @@ export async function createArtifact(data: CreateArtifactRequest): Promise<Artif
     };
 
     // Get story content for AI generation context
-    const story = await getStoryById(data.storyId);
+    const story = await storyService.getById(data.storyId);
     if (!story) {
         throw new Error('Story not found');
     }
@@ -187,10 +188,10 @@ export async function addFeedbackAndIterate(artifactId: string, data: AddFeedbac
         throw new Error('Current version not found');
     }
 
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     // Get story content for AI generation context
-    const story = await getStoryById(artifact.storyId);
+    const story = await storyService.getById(artifact.storyId);
     if (!story) {
         throw new Error('Story not found');
     }
@@ -329,7 +330,7 @@ export async function updateArtifactContent(artifactId: string, data: UpdateArti
         throw new Error('Current version not found');
     }
 
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     // Check if the provided content is the same as current content
     if (areContentsEqual(data.content, currentVersion.content)) {
@@ -424,7 +425,7 @@ export async function finalizeArtifact(artifactId: string): Promise<ArtifactWith
         throw new Error('Cannot finalize artifact with empty content');
     }
 
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     await db.update(artifacts)
         .set({
@@ -473,7 +474,7 @@ export async function duplicateArtifact(sourceArtifactId: string): Promise<Artif
 
     const newArtifactId = uuidv4();
     const newVersionId = uuidv4();
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     const newArtifactData = {
         id: newArtifactId,
@@ -555,7 +556,7 @@ export async function restoreVersion(artifactId: string, targetVersion: number):
         };
     }
 
-    const now = new Date().toISOString();
+    const now = isoNow()
 
     // Simply update the current version pointer to the target version
     await db.update(artifacts)
@@ -664,7 +665,7 @@ export async function removeArtifactVersion(artifactId: string, version: number)
         throw new Error('Version not found');
     }
 
-    const now = new Date().toISOString();
+    const now = isoNow()
     let newCurrentVersion = artifact.currentVersion;
 
     // If removing the current version, need to update the pointer

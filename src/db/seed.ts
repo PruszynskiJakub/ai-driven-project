@@ -1,9 +1,9 @@
-import { Database } from 'bun:sqlite';
-import { v4 as uuidv4 } from 'uuid';
+import {Database} from 'bun:sqlite';
+import {v4 as uuidv4} from 'uuid';
 
 const sqlite = new Database('database.db');
 
-const now = new Date().toISOString();
+const now = isoNow()
 
 const testSparks = [
   {

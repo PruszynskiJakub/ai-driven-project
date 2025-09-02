@@ -1,8 +1,15 @@
-import { describe, test, expect, beforeEach, afterEach } from 'bun:test';
-import { setupTestDatabase, cleanupTestDatabase, clearTestData, getSparkFromDb, getStoryBySparkIdFromDb, countSparksInDb, countStoriesInDb } from './setup';
-import { testApp } from './testApp';
-import { setTestDb } from '../src/db/database';
-import { createValidSparkData, createInvalidSparkData, createTestSparkInDb, createTestStoryInDb, generateLongString } from './factories';
+import {afterEach, beforeEach, describe, expect, test} from 'bun:test';
+import {
+    cleanupTestDatabase,
+    clearTestData,
+    countSparksInDb,
+    getSparkFromDb,
+    getStoryBySparkIdFromDb,
+    setupTestDatabase
+} from './setup';
+import {testApp} from './testApp';
+import {setTestDb} from '../src/db/database';
+import {createInvalidSparkData, createTestSparkInDb, createTestStoryInDb, createValidSparkData} from './factories';
 
 let testDb: any;
 
@@ -112,7 +119,7 @@ describe('POST /api/sparks', () => {
   });
 
   test('sets createdAt and updatedAt timestamps', async () => {
-    const beforeTime = new Date().toISOString();
+    const beforeTime = isoNow()
     const sparkData = createValidSparkData();
 
     const response = await testApp.request('/api/sparks', {
@@ -122,7 +129,7 @@ describe('POST /api/sparks', () => {
     });
 
     const result = await response.json();
-    const afterTime = new Date().toISOString();
+    const afterTime = isoNow()
     
     expect(result.data.createdAt >= beforeTime).toBe(true);
     expect(result.data.createdAt <= afterTime).toBe(true);

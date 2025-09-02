@@ -1,4 +1,4 @@
-import type { Context, Next } from 'hono';
+import type {Context, Next} from 'hono';
 
 export interface LogEntry {
   timestamp: string;
@@ -40,7 +40,7 @@ export class Logger {
     return async (c: Context, next: Next) => {
       const start = Date.now();
       const requestId = this.generateRequestId();
-      const timestamp = new Date().toISOString();
+      const timestamp = isoNow()
       
       c.set('requestId', requestId);
 

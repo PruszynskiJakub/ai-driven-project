@@ -3,7 +3,7 @@ import {db} from "../db/database.ts";
 import {artifacts, sparks, stories} from "../db/schema";
 import {count, eq} from "drizzle-orm";
 import {v4 as uuidv4} from "uuid";
-import {createStory} from "./storyService.ts";
+import {storyService} from "./story.service.ts";
 
 async function getArtifactCounts(id: string): Promise<{ draft: number; final: number }> {
     const counts = await db
@@ -44,7 +44,7 @@ export const sparkService = {
     },
     create: async (data: CreateSparkRequest): Promise<SparkResponse> => {
         const id = uuidv4();
-        const now = new Date().toISOString();
+        const now = isoNow()
 
         const sparkData = {
             id,
@@ -58,7 +58,7 @@ export const sparkService = {
         await db.insert(sparks).values(sparkData);
 
         // Auto-create empty Story for the new Spark
-        await createStory({ sparkId: id, content: '' });
+        await storyService.create({ sparkId: id, content: '' });
 
         return {
             id: sparkData.id,
