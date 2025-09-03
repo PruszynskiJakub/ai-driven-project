@@ -304,7 +304,7 @@ export const artifactService = {
             id: artifact.id,
             storyId: artifact.storyId,
             type: artifact.type as any,
-            state: 'final',
+            state: 'final' as ArtifactState,
             currentVersion: artifact.currentVersion,
             createdAt: artifact.createdAt,
             updatedAt: now,
