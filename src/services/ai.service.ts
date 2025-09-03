@@ -30,33 +30,34 @@ export class AIServiceError extends Error {
 
 const OPENROUTER_API_URL = 'https://openrouter.ai/api/v1/chat/completions';
 const DEFAULT_MODEL = 'openai/gpt-4o';
+const DEFAULT_IMAGE_MODEL = 'black-forest-labs/flux-schnell';
 
 export const aiService = {
     completion: async (request: AIGenerationRequest): Promise<AIGenerationResponse> => {
-        const apiKey = process.env.OPENROUTER_API_KEY;
-        if (!apiKey) {
-            throw new AIServiceError('OPENROUTER_API_KEY environment variable is not set');
-        }
-
         const siteUrl = process.env.SITE_URL || 'http://localhost:3000';
         const siteName = process.env.SITE_NAME || 'AI Content Platform';
 
         try {
-            const response = await fetch(OPENROUTER_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${apiKey}`,
-                    'HTTP-Referer': siteUrl,
-                    'X-Title': siteName,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    model: request.model || DEFAULT_MODEL,
-                    messages: request.messages,
-                    temperature: request.temperature || 0.7,
-                    max_tokens: request.maxTokens || 2000,
-                }),
-            });
+            const response = await fetch(
+                OPENROUTER_API_URL,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                        'HTTP-Referer': siteUrl,
+                        'X-Title': siteName,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(
+                        {
+                            model: request.model || DEFAULT_MODEL,
+                            messages: request.messages,
+                            temperature: request.temperature || 0.7,
+                            max_tokens: request.maxTokens || 2000,
+                        }
+                    ),
+                }
+            );
 
             if (!response.ok) {
                 const errorData = await response.text();
@@ -88,18 +89,15 @@ export const aiService = {
         }
     },
     image: async (prompt: string): Promise<string> => {
-        const apiToken = process.env.REPLICATE_API_TOKEN;
-        if (!apiToken) {
-            throw new AIServiceError('REPLICATE_API_TOKEN environment variable is not set');
-        }
-
         try {
-            const replicate = new Replicate({ auth: apiToken });
-            const model = "black-forest-labs/flux-schnell";
+            const replicate = new Replicate({auth: process.env.REPLICATE_API_TOKEN});
 
-            const output = await replicate.run(model, {
-                input: { prompt }
-            }) as string[];
+            const output = await replicate.run(
+                DEFAULT_IMAGE_MODEL,
+                {
+                    input: {prompt}
+                }
+            ) as string[];
 
             if (!output || !output[0]) {
                 throw new AIServiceError('No image output received from Replicate');
@@ -114,9 +112,8 @@ export const aiService = {
             }
 
             const imageBuffer = await imageResponse.arrayBuffer();
-            const base64Image = Buffer.from(imageBuffer).toString('base64');
+            return Buffer.from(imageBuffer).toString('base64');
 
-            return base64Image;
         } catch (error) {
             if (error instanceof AIServiceError) {
                 throw error;
