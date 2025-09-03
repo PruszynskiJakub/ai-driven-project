@@ -20,6 +20,35 @@ import {artifacts, artifactVersions} from "../db/schema";
 import {and, desc, eq} from "drizzle-orm";
 import {areContentsEqual} from "../utils/text.ts";
 
+const generateContent = async (context: {type: ArtifactTypes, storyContent: string, feedback?: string}) : Promise<string> => {
+    let content = ''
+
+    switch (context.type) {
+        case 'image':
+            content = await aiService.image(createImagePrompt())
+            break;
+        case 'linkedin_post':
+            const messages: AIMessage[] = [
+                {
+                    role: 'system',
+                    content: createLinkedinPostPrompt()
+                },
+                {
+                    role: 'user',
+                    content: `Story context: ${context.storyContent}`
+                }
+            ];
+            const completion = await aiService.completion({messages})
+            content = completion.content
+            break;
+        default:
+            // code block
+            break;
+    }
+
+    return content
+}
+
 export const artifactService = {
     create: async (data: CreateArtifactRequest): Promise<ArtifactWithVersionResponse> => {
         const artifactId = uuidv4();
@@ -38,43 +67,16 @@ export const artifactService = {
             sourceArtifactId: null,
         };
 
-        // Get story content for AI generation context
         const story = await storyService.getById(data.storyId);
         if (!story) {
             throw new Error('Story not found');
-        }
-
-        // Generate initial content using AI service
-        let initialContent = '';
-
-        switch (data.type.toLowerCase() as ArtifactTypes) {
-            case 'image':
-                initialContent = await aiService.image(createImagePrompt())
-                break;
-            case 'linkedin_post':
-                const messages: AIMessage[] = [
-                    {
-                        role: 'system',
-                        content: createLinkedinPostPrompt()
-                    },
-                    {
-                        role: 'user',
-                        content: `Story context: ${story.content}\n\nPlease create engaging ${data.type} content based on this story.`
-                    }
-                ];
-                const completion = await aiService.completion({messages})
-                initialContent = completion.content
-                break;
-            default:
-                // code block
-                break;
         }
 
         const initialVersionData = {
             id: versionId,
             artifactId,
             version: 1,
-            content: initialContent,
+            content: await generateContent({type: data.type as ArtifactTypes, storyContent: story.content}),
             userFeedback: null,
             createdAt: now,
             generationType: 'ai_generated' as GenerationType,
@@ -195,49 +197,7 @@ export const artifactService = {
             throw new Error('Story not found');
         }
 
-        // Generate new content based on feedback using AI service
-        let newContent = '';
-
-        // In test environment, use current content to test comparison logic
-        if (process.env.NODE_ENV === 'test' || !process.env.OPENROUTER_API_KEY) {
-            // For testing content comparison: determine based on feedback if we want same or different content
-            if (data.feedback.includes('Make it better') || data.feedback.includes('Make it more engaging')) {
-                // Return different content to test version creation
-                newContent = currentVersion.content + ' [Updated based on feedback]';
-            } else {
-                // Return same content to test no version creation
-                newContent = currentVersion.content;
-            }
-        } else {
-            try {
-                switch (artifact.type as ArtifactTypes) {
-                    case 'image':
-                        newContent = await aiService.image(createImagePrompt())
-                        break
-                    case 'linkedin_post':
-                        const messages: AIMessage[] = [
-                            {
-                                role: 'system',
-                                content: createLinkedinPostPrompt()
-                            },
-                            {
-                                role: 'user',
-                                content: `Story context: ${story.content}${data.feedback ? `\n\nUser feedback: ${data.feedback}` : ''}\n\nPlease create engaging ${artifact.type} content based on this story.`
-                            }
-                        ];
-                        const completion = await aiService.completion({messages})
-                        newContent = completion.content
-                        break
-                    default:
-                        throw Error("Unknown Artifact type");
-                }
-
-            } catch (error) {
-                console.error('AI content generation failed:', error);
-                // Fall back to placeholder content if AI generation fails
-                newContent = `[AI Generated content based on feedback: "${data.feedback}"]`;
-            }
-        }
+        let newContent = await generateContent({type: artifact.type as ArtifactTypes, storyContent: story.content, feedback: data.feedback})
 
         // Check if the generated content is the same as current content
         if (areContentsEqual(newContent, currentVersion.content)) {
