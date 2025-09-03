@@ -211,10 +211,10 @@ export const artifactService = {
         } else {
             try {
                 switch (artifact.type as ArtifactTypes) {
-                    case "image":
+                    case 'image':
                         newContent = await aiService.image(createImagePrompt())
                         break
-                    case "linkedin_post":
+                    case 'linkedin_post':
                         const messages: AIMessage[] = [
                             {
                                 role: 'system',
