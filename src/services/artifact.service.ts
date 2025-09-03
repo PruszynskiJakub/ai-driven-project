@@ -231,11 +231,10 @@ export const artifactService = {
             .where(eq(artifactVersions.artifactId, artifactId));
 
         const maxVersion = Math.max(...existingVersions.map(v => v.version));
-        const newVersion = maxVersion + 1;
         const newVersionData = {
             id: uuidv4(),
             artifactId,
-            version: newVersion,
+            version: maxVersion + 1,
             content: newContent,
             userFeedback: data.feedback,
             createdAt: now,
@@ -245,7 +244,7 @@ export const artifactService = {
         await db.insert(artifactVersions).values(newVersionData);
         await db.update(artifacts)
             .set({
-                currentVersion: newVersion,
+                currentVersion: newVersionData.version,
                 updatedAt: now
             })
             .where(eq(artifacts.id, artifactId));
@@ -255,7 +254,7 @@ export const artifactService = {
             storyId: artifact.storyId,
             type: artifact.type as any,
             state: artifact.state as ArtifactState,
-            currentVersion: newVersion,
+            currentVersion: newVersionData.version,
             createdAt: artifact.createdAt,
             updatedAt: now,
             finalizedAt: artifact.finalizedAt,
