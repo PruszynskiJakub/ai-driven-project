@@ -10,6 +10,7 @@ import {
 import {testApp} from './testApp';
 import {setTestDb} from '../src/db/database';
 import {createInvalidSparkData, createTestSparkInDb, createTestStoryInDb, createValidSparkData} from './factories';
+import {isoNow} from '../src/utils/datetime';
 
 let testDb: any;
 

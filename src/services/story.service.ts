@@ -58,7 +58,7 @@ export const storyService = {
             lastAutoSavedAt: storyData.lastAutoSavedAt,
         };
     },
-    update: async  (data: UpdateStoryRequest): Promise<StoryResponse|null> => {
+    update: async  (id: string, data: UpdateStoryRequest): Promise<StoryResponse|null> => {
         const now = isoNow()
 
         const updateData: any = {

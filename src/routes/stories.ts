@@ -55,7 +55,7 @@ stories.put('/:storyId', zValidator('json', UpdateStorySchema), async (c) => {
 // Auto-save Story
 stories.patch('/:storyId/autosave', zValidator('json', z.object({ content: z.string() })), async (c) => {
     const storyId = c.req.param('storyId');
-    const content  = c.req.valid('json');
+    const { content } = c.req.valid('json');
 
     if (!storyId) {
         return c.json({ error: 'Story ID is required' }, 400);

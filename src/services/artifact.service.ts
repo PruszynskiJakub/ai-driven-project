@@ -59,7 +59,7 @@ export const artifactService = {
                     },
                     {
                         role: 'user',
-                        content: `Story context: ${storyContent}${feedback ? `\n\nUser feedback: ${feedback}` : ''}\n\nPlease create engaging ${artifactType} content based on this story.`
+                        content: `Story context: ${story.content}\n\nPlease create engaging ${data.type} content based on this story.`
                     }
                 ];
                 const completion = await aiService.completion({messages})
@@ -222,7 +222,7 @@ export const artifactService = {
                             },
                             {
                                 role: 'user',
-                                content: `Story context: ${storyContent}${feedback ? `\n\nUser feedback: ${feedback}` : ''}\n\nPlease create engaging ${artifactType} content based on this story.`
+                                content: `Story context: ${story.content}${data.feedback ? `\n\nUser feedback: ${data.feedback}` : ''}\n\nPlease create engaging ${artifact.type} content based on this story.`
                             }
                         ];
                         const completion = await aiService.completion({messages})
