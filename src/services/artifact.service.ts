@@ -23,16 +23,12 @@ import {areContentsEqual} from "../utils/text.ts";
 const generateContent = async (context: {type: ArtifactTypes, storyContent: string, feedback?: string}) : Promise<string> => {
     switch (context.type) {
         case 'image':
-            return await aiService.image(createImagePrompt())
+            return await aiService.image(createImagePrompt({story: context.storyContent}))
         case 'linkedin_post':
             const messages: AIMessage[] = [
                 {
                     role: 'system',
-                    content: createLinkedinPostPrompt()
-                },
-                {
-                    role: 'user',
-                    content: `Story context: ${context.storyContent}`
+                    content: createLinkedinPostPrompt({story: context.storyContent})
                 }
             ];
             const completion = await aiService.completion({messages})
