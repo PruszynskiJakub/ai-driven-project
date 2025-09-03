@@ -1,4 +1,5 @@
 import type {Context, Next} from 'hono';
+import {isoNow} from "../utils/datetime.ts";
 
 export interface LogEntry {
   timestamp: string;
