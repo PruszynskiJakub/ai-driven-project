@@ -5,6 +5,9 @@ import {count, desc, eq} from "drizzle-orm";
 import {v4 as uuidv4} from "uuid";
 import {storyService} from "./story.service.ts";
 import {isoNow} from "../utils/datetime.ts";
+import {type AIMessage, aiService} from "./ai.service.ts";
+import {prompt as refineSparkTitlePrompt} from "../prompts/spark-title.refine.ts"
+import {prompt as refineSparkThoughtsPrompt} from "../prompts/spark-thoughts.refine.ts"
 
 async function getArtifactCounts(id: string): Promise<{ draft: number; final: number }> {
     const counts = await db
@@ -47,10 +50,32 @@ export const sparkService = {
         const id = uuidv4();
         const now = isoNow()
 
+        const messagesTitle: AIMessage[] = [
+            {
+                role: 'system',
+                content: refineSparkTitlePrompt({title: data.title, initialThoughts: data.initialThoughts})
+            }
+        ];
+        const refineTitle = aiService.completion({messages: messagesTitle});
+
+
+        const messagesThoughts: AIMessage[] = [
+            {
+                role: 'system',
+                content: refineSparkThoughtsPrompt({title: data.title, initialThoughts: data.initialThoughts})
+            }
+        ];
+        const refineThoughts = data.initialThoughts ? aiService.completion({messages: messagesThoughts}) : Promise.resolve(null)
+
+        const [titleResult, thoughtsResult] = await Promise.all([refineTitle, refineThoughts])
+        
+        const title = titleResult.content
+        const initialThoughts = thoughtsResult?.content || null
+
         const sparkData = {
             id,
-            title: data.title,
-            initialThoughts: data.initialThoughts || null,
+            title,
+            initialThoughts,
             createdAt: now,
             updatedAt: now,
             userId: 'default_user',
