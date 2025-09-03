@@ -1,24 +1,7 @@
-import { Hono } from 'hono';
-import { validator } from 'hono/validator';
-import {
-  createArtifact,
-  getArtifactById,
-  getArtifactVersions,
-  getArtifactVersion,
-  addFeedbackAndIterate,
-  updateArtifactContent,
-  finalizeArtifact,
-  duplicateArtifact,
-  getArtifactsByStoryId,
-  removeArtifactVersion,
-  restoreVersion,
-  deleteArtifact
-} from '../services/artifactService';
-import {
-  CreateArtifactSchema,
-  UpdateArtifactContentSchema,
-  AddFeedbackSchema
-} from '../models/artifact';
+import {Hono} from 'hono';
+import {validator} from 'hono/validator';
+import {AddFeedbackSchema, CreateArtifactSchema, UpdateArtifactContentSchema} from '../models/artifact';
+import {artifactService} from "../services/artifact.service.ts";
 
 const artifacts = new Hono();
 
@@ -34,7 +17,7 @@ artifacts.post('/',
   async (c) => {
     try {
       const artifactData = c.req.valid('json');
-      const artifact = await createArtifact(artifactData);
+      const artifact = await artifactService.create(artifactData);
       
       return c.json({
         success: true,
@@ -55,7 +38,7 @@ artifacts.post('/',
 artifacts.get('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const artifact = await getArtifactById(id);
+    const artifact = await artifactService.getById(id);
     
     if (!artifact) {
       return c.json({ error: 'Artifact not found' }, 404);
@@ -78,7 +61,7 @@ artifacts.get('/:id', async (c) => {
 artifacts.get('/:id/versions', async (c) => {
   try {
     const id = c.req.param('id');
-    const versions = await getArtifactVersions(id);
+    const versions = await artifactService.getAllVersions(id);
     
     return c.json({
       success: true,
@@ -103,7 +86,7 @@ artifacts.get('/:id/versions/:version', async (c) => {
       return c.json({ error: 'Invalid version number' }, 400);
     }
     
-    const versionData = await getArtifactVersion(id, version);
+    const versionData = await artifactService.getVersion(id, version);
     
     if (!versionData) {
       return c.json({ error: 'Version not found' }, 404);
@@ -132,7 +115,7 @@ artifacts.post('/:id/versions/:version/restore', async (c) => {
       return c.json({ error: 'Invalid version number' }, 400);
     }
     
-    const artifact = await restoreVersion(id, version);
+    const artifact = await artifactService.restoreVersion(id, version);
     
     if (!artifact) {
       return c.json({ error: 'Artifact not found' }, 404);
@@ -167,7 +150,7 @@ artifacts.delete('/:id/versions/:version', async (c) => {
       return c.json({ error: 'Invalid version number' }, 400);
     }
     
-    const artifact = await removeArtifactVersion(id, version);
+    const artifact = await artifactService.deleteVersion(id, version);
     
     if (!artifact) {
       return c.json({ error: 'Artifact not found' }, 404);
@@ -206,7 +189,7 @@ artifacts.post('/:id/iterate',
     try {
       const id = c.req.param('id');
       const feedbackData = c.req.valid('json');
-      const artifact = await addFeedbackAndIterate(id, feedbackData);
+      const artifact = await artifactService.addFeedback(id, feedbackData);
       
       if (!artifact) {
         return c.json({ error: 'Artifact not found' }, 404);
@@ -244,7 +227,7 @@ artifacts.put('/:id/content',
     try {
       const id = c.req.param('id');
       const contentData = c.req.valid('json');
-      const artifact = await updateArtifactContent(id, contentData);
+      const artifact = await artifactService.updateContent(id, contentData);
       
       if (!artifact) {
         return c.json({ error: 'Artifact not found' }, 404);
@@ -273,7 +256,7 @@ artifacts.put('/:id/content',
 artifacts.post('/:id/finalize', async (c) => {
   try {
     const id = c.req.param('id');
-    const artifact = await finalizeArtifact(id);
+    const artifact = await artifactService.finalize(id);
     
     if (!artifact) {
       return c.json({ error: 'Artifact not found' }, 404);
@@ -301,7 +284,7 @@ artifacts.post('/:id/finalize', async (c) => {
 artifacts.post('/:id/duplicate', async (c) => {
   try {
     const id = c.req.param('id');
-    const newArtifact = await duplicateArtifact(id);
+    const newArtifact = await artifactService.duplicate(id);
     
     if (!newArtifact) {
       return c.json({ error: 'Artifact not found' }, 404);
@@ -327,7 +310,7 @@ artifacts.post('/:id/duplicate', async (c) => {
 artifacts.delete('/:id', async (c) => {
   try {
     const id = c.req.param('id');
-    const deleted = await deleteArtifact(id);
+    const deleted = await artifactService.delete(id);
     
     if (!deleted) {
       return c.json({ error: 'Artifact not found' }, 404);

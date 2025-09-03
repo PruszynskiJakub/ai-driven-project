@@ -57,3 +57,4 @@ As a system I wanna auto suggest possible publications based on the artifacts.
 
 We wanna store prompt templates, whenever a user is created with copy all prompts and assign as user's initial prompts
 
+Czy feedback buduje konwersację czy generuje zupełnie nową wersję ? - Feedback dotyczy zawsze aktualnie zmienianej wersji

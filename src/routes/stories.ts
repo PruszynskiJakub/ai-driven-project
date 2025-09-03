@@ -1,9 +1,9 @@
 import {Hono} from 'hono';
 import {zValidator} from '@hono/zod-validator';
-import {getArtifactsByStoryId} from '../services/artifactService';
 import {UpdateStorySchema} from '../models/story';
 import {z} from 'zod';
 import {storyService} from "../services/story.service.ts";
+import {artifactService} from "../services/artifact.service.ts";
 
 const stories = new Hono();
 
@@ -84,7 +84,7 @@ stories.get('/:storyId/artifacts', async (c) => {
     }
 
     try {
-        const artifacts = await getArtifactsByStoryId(storyId);
+        const artifacts = await artifactService.getByStoryId(storyId);
         
         return c.json({
             success: true,
