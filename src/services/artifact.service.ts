@@ -13,7 +13,8 @@ import {v4 as uuidv4} from "uuid";
 import {isoNow} from "../utils/datetime.ts";
 import {storyService} from "./story.service.ts";
 import {type AIMessage, aiService} from "./ai.service.ts";
-import {prompt as createLinkedinPost} from "../prompts/linkedin-post.create.ts";
+import {prompt as createLinkedinPostPrompt} from "../prompts/linkedin-post.create.ts";
+import {prompt as createImagePrompt} from "../prompts/image.create.ts";
 import {db} from "../db/database.ts";
 import {artifacts, artifactVersions} from "../db/schema";
 import {and, desc, eq} from "drizzle-orm";
@@ -48,13 +49,13 @@ export const artifactService = {
 
         switch (data.type.toLowerCase() as ArtifactTypes) {
             case 'image':
-                initialContent = await aiService.image(story.content)
+                initialContent = await aiService.image(createImagePrompt())
                 break;
             case 'linkedin_post':
                 const messages: AIMessage[] = [
                     {
                         role: 'system',
-                        content: createLinkedinPost()
+                        content: createLinkedinPostPrompt()
                     },
                     {
                         role: 'user',
@@ -144,7 +145,7 @@ export const artifactService = {
             generationType: version.generationType as GenerationType,
         }));
     },
-    getVersion: async (artifactId: string, version: number): Promise<ArtifactVersionResponse> => {
+    getVersion: async (artifactId: string, version: number): Promise<ArtifactVersionResponse|null> => {
         const [versionData] = await db
             .select()
             .from(artifactVersions)
@@ -211,13 +212,13 @@ export const artifactService = {
             try {
                 switch (artifact.type as ArtifactTypes) {
                     case "image":
-                        newContent = await aiService.image(`${story.content}, ${data.feedback}`)
+                        newContent = await aiService.image(createImagePrompt())
                         break
                     case "linkedin_post":
                         const messages: AIMessage[] = [
                             {
                                 role: 'system',
-                                content: `You are a content creation assistant. Generate high-quality ${artifactType} content based on the provided story context.${feedback ? ' Take into account the user feedback to improve the content.' : ''}`
+                                content: createLinkedinPostPrompt()
                             },
                             {
                                 role: 'user',
