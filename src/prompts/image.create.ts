@@ -1,3 +1,3 @@
-export const prompt = () => {
+export const prompt = (ctx: {story: string, reference?: string}) => {
     return ""
 }
