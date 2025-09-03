@@ -21,12 +21,9 @@ import {and, desc, eq} from "drizzle-orm";
 import {areContentsEqual} from "../utils/text.ts";
 
 const generateContent = async (context: {type: ArtifactTypes, storyContent: string, feedback?: string}) : Promise<string> => {
-    let content = ''
-
     switch (context.type) {
         case 'image':
-            content = await aiService.image(createImagePrompt())
-            break;
+            return await aiService.image(createImagePrompt())
         case 'linkedin_post':
             const messages: AIMessage[] = [
                 {
@@ -39,14 +36,10 @@ const generateContent = async (context: {type: ArtifactTypes, storyContent: stri
                 }
             ];
             const completion = await aiService.completion({messages})
-            content = completion.content
-            break;
+            return completion.content
         default:
-            // code block
-            break;
+            throw new Error("Unsupported artifact type")
     }
-
-    return content
 }
 
 export const artifactService = {
